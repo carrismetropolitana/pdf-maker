@@ -3,7 +3,7 @@ import { Timetable, TimetableEntry, TimetablePeriod } from './apitypes';
 
 export default function Schedule({ className, style, timetable }: {className?: string, style?: CSSProperties, timetable:Timetable}) {
 	return (
-		<div className={className + ' flex flex-col gap-10 pr-4 text-neutral-800'} style={style}>
+		<div className={className + ' flex flex-col gap-10'} style={style}>
 			{timetable.periods.map((period, i) => <PeriodTable key={i} period={period} />)}
 			<Exceptions exceptions={timetable.exceptions}/>
 		</div>
