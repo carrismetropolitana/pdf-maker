@@ -75,7 +75,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 
 	return (
 		<div>
-			<Header backgroundColor={pattern.color} color={pattern.text_color} />
+			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} firstStop={pattern.path[0].Stop.name} lastStop={pattern.path[pattern.path.length - 1].Stop.name} />
 			<div className='flex flex-row justify-end w-full p-4'>
 				{/* <Spine className='grow' stops={stops} /> */}
 				<div className='text-neutral-800 w-[430px] flex flex-col gap-8'>

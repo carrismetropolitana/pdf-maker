@@ -1,6 +1,6 @@
 import Logo from './logo';
 
-export default function Header({ backgroundColor, color }: {backgroundColor: string, color: string}) {
+export default function Header({ backgroundColor, color, lineId, stopId, firstStop, lastStop }: {backgroundColor: string, color: string, lineId:string, stopId:string, firstStop:string, lastStop:string}) {
 	return (
 
 		<div className='p-[5mm] bg-black h-[30mm] text-white w-full flex items-center'>
@@ -42,8 +42,8 @@ export default function Header({ backgroundColor, color }: {backgroundColor: str
 							</div>
 						</div>
 						<div className='flex h-full flex-col justify-between font-base'>
-							<p>Setúbal (ITS), via Azeitão</p>
-							<p>Cacilhas (Terminal)</p>
+							<p>{firstStop}</p>
+							<p>{lastStop}</p>
 						</div>
 					</div>
 				</div>
