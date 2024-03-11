@@ -5,6 +5,7 @@ export default function Schedule({ className, style, timetable }: {className?: s
 	return (
 		<div className={className + ' flex flex-col gap-10 pr-4 text-neutral-800'} style={style}>
 			{timetable.periods.map((period, i) => <PeriodTable key={i} period={period} />)}
+			<Exceptions exceptions={timetable.exceptions}/>
 		</div>
 	);
 }
@@ -22,16 +23,16 @@ function PeriodTable({ period }:{period:TimetablePeriod}) {
 }
 
 function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
-	let timesByHour:number[][] = Array.from<number[], number[]>({ length: 25 }, () => []);
+	let timesByHour:{minute:number, exception:string}[][] = Array.from<number[], {minute:number, exception:string}[]>({ length: 25 }, () => []);
 	for (let entry of times) {
 		const [hour, minute, _] = entry.time.split(':').map(s => parseInt(s, 10));
+		const exception = entry.exceptions.map(e => e.id).join(',');
 		let span = timesByHour[hour];
-		if (span && !span.includes(minute)) span.push(minute);
-		console.log(span);
+		if (span && !span.find(elem => elem.minute == minute)) span.push({ minute, exception });
 	}
 	// sort each span
 	for (let span of timesByHour) {
-		span.sort((a, b) => a - b);
+		span.sort((a, b) => a.minute - b.minute);
 	}
 	// console.log(times);
 	return <div className=''>
@@ -39,14 +40,30 @@ function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
 		<h3>{title}</h3>
 		<div className='flex text-[3mm]'>
 			<div className='flex flex-col '>
-				<div className='bg-black text-white text-center  rounded-l-full pl-2 -ml-2'>Hora</div>
-				<div className='text-center  '>Min.</div>
+				<div className='bg-black text-white text-center rounded-l-full pl-2 -ml-2 font-semibold text-[8pt] h-[4mm]'>Hora</div>
+				<div className='text-center text-[7.5pt]'>Min.</div>
 			</div>
-			{timesByHour.map((minutes, hour) => <div key={hour} className='flex flex-col items-stretch w-4 text-[3mm]'>
-				<div className={'bg-black text-white text-center' + (hour == timesByHour.length - 1 ? ' pr-2 -mr-2 rounded-r-full' : '')}>{hour}</div>
-				{minutes.map((minute, i) => <div key={i} className={'text-[3mm] text-center'}>{minute}</div>)}
+			{timesByHour.map((minutes, hour) => <div key={hour} className='flex flex-col items-stretch w-4 text-[7mm]'>
+				<div className={'bg-black text-white text-center font-semibold  text-[8pt] h-[4mm]' + (hour == timesByHour.length - 1 ? ' pr-2 -mr-1 rounded-r-full' : '')}>{hour}</div>
+				{minutes.map((entry, i) => <div key={i} className={'text-[7.5pt] text-center'}>{entry.minute}{entry.exception ? <span className='align-super text-[5pt]'>{entry.exception}</span> : null}</div>)}
 			</div>)
 			}
 		</div>
 	</div>;
+}
+
+function Exceptions({ exceptions }:{exceptions:{
+    id: string;
+    label: string;
+    text: string;
+  }[]}) {
+	return (
+		<div className='flex flex-col gap-2'>
+			{exceptions.map((entry, i) => <div key={i} className='flex flex-row gap-4'>
+				<p className='text-[8pt]'>
+					<span className='font-bold'>{entry.label} </span>
+					{entry.text}
+				</p>
+			</div>)}
+		</div>);
 }
