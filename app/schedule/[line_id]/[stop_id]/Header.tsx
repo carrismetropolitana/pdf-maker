@@ -1,6 +1,6 @@
 import Logo from './logo';
 
-export default function Header({ backgroundColor, color, lineId, stopId, firstStop, lastStop }: {backgroundColor: string, color: string, lineId:string, stopId:string, firstStop:string, lastStop:string}) {
+export default function Header({ backgroundColor, color, lineId, firstStop, lastStop }: {backgroundColor: string, color: string, lineId:string, firstStop:string, lastStop:string}) {
 	return (
 
 		<div className='p-[5mm] bg-black h-[30mm] text-white w-full flex items-center'>
@@ -49,7 +49,7 @@ export default function Header({ backgroundColor, color, lineId, stopId, firstSt
 				</div>
 				<div className='text-center px-[10mm] py-[2mm] font-bold rounded-full text-[16mm] leading-none '
 					style={{ backgroundColor, color }}>
-					<p>3605</p>
+					<p>{lineId}</p>
 				</div>
 			</div>
 		</div>
