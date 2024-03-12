@@ -10,38 +10,42 @@ export default function Header({ backgroundColor, color, lineId, firstStop, last
 						<Logo className='w-[45.6mm]' />
 					</div>
 					<div className='flex flex-row gap-[2.5mm] justify-start'>
-						<div className='flex h-full w-[4mm] rounded-[5mm] flex-col justify-between' style={{ backgroundColor }}>
-							<div className='flex bg-white rounded-[5mm] h-[4mm] w-[4mm] text-black flex-row items-center justify-center'>
-								<svg
-									stroke='black'
-									className='w-[12mm] h-[12mm]'
-									viewBox='0 0 24 24'
-									strokeWidth='3'
-									strokeLinecap='round'
-									strokeLinejoin='round'
-								>
-									<path d='M6 9l6 6l6 -6' />
-								</svg>
+						<div className=''>
+
+							<div className='flex h-full w-[4mm] rounded-[5mm] flex-col justify-between' style={{ backgroundColor }}>
+								<div className='flex bg-white rounded-[5mm] h-[4mm] w-[4mm] text-black flex-row items-center justify-center'>
+									<svg
+										stroke='black'
+										className='w-[12mm] h-[12mm] fill-transparent'
+										viewBox='0 0 24 24'
+										strokeWidth='3'
+										strokeLinecap='round'
+										strokeLinejoin='round'
+									>
+										<path d='M6 9l6 6l6 -6' />
+									</svg>
+								</div>
+								<div className='flex bg-black rounded-[5mm] text-white h-[4mm] w-[4mm] text-[3mm] font-bold flex-row items-center justify-center'>
+									<p>B</p>
+								</div>
+								<div className='flex bg-white rounded-[5mm] h-[4mm] w-[4mm] text-black flex-row items-center justify-center'>
+									<svg
+										stroke='black'
+										className='w-[12mm] h-[12mm]'
+										viewBox='0 0 24 24'
+										strokeWidth='3'
+										strokeLinecap='round'
+										strokeLinejoin='round'
+									>
+										<path stroke='none' d='M0 0h24v24H0z' fill='none' />
+										<path d='M18 6l-12 12' />
+										<path d='M6 6l12 12' />
+									</svg>
+								</div>
 							</div>
-							<div className='flex bg-black rounded-[5mm] text-white h-[4mm] w-[4mm] text-[3mm] font-bold flex-row items-center justify-center'>
-								<p>B</p>
-							</div>
-							<div className='flex bg-white rounded-[5mm] h-[4mm] w-[4mm] text-black flex-row items-center justify-center'>
-								<svg
-									stroke='black'
-									className='w-[12mm] h-[12mm]'
-									viewBox='0 0 24 24'
-									strokeWidth='3'
-									strokeLinecap='round'
-									strokeLinejoin='round'
-								>
-									<path stroke='none' d='M0 0h24v24H0z' fill='none' />
-									<path d='M18 6l-12 12' />
-									<path d='M6 6l12 12' />
-								</svg>
-							</div>
+
 						</div>
-						<div className='flex h-full flex-col justify-between font-base'>
+						<div className='flex h-full flex-col justify-between text-[11pt] leading-none'>
 							<p>{firstStop}</p>
 							<p>{lastStop}</p>
 						</div>
