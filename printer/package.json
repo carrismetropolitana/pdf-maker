@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@types/node": "20.8.2",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "eslint": "^8.57.0",
+    "puppeteer": "^22.5.0"
+  },
+  "scripts": {
+    "start": "tsc && node build/index.js"
+  }
+}
