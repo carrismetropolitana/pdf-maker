@@ -58,8 +58,8 @@ function Exceptions({ exceptions }:{exceptions:{
     text: string;
   }[]}) {
 	return (
-		<div className='flex flex-col gap-2'>
-			{exceptions.map((entry, i) => <div key={i} className='flex flex-row gap-4'>
+		<div className='flex flex-col gap-0'>
+			{exceptions.map((entry, i) => <div key={i} className='flex flex-row gap-2'>
 				<p className='text-[8pt]'>
 					<span className='font-bold'>{entry.label} </span>
 					{entry.text}

@@ -1,3 +1,4 @@
+import React from 'react';
 export default function Logo({ className, style }: { className?: string, style?: React.CSSProperties}) {
 	return (
 		<svg className={className + ' fill-white'} style={style}

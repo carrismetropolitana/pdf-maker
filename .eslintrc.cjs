@@ -68,6 +68,6 @@ module.exports = {
 		'template-tag-spacing': ['error', 'never'],
 		'wrap-iife': ['error', 'inside'],
 		'yield-star-spacing': ['error', { before: false, after: true }],
-		'no-unused-vars': ['error', { argsIgnorePattern: '^_', 'destructuredArrayIgnorePattern': '^_' }],
+		'no-unused-vars': ['warn', { argsIgnorePattern: '^_', 'destructuredArrayIgnorePattern': '^_' }],
 	},
 };

@@ -2,114 +2,20 @@ import React, { CSSProperties, Fragment } from 'react';
 import TablerClock from './TablerClock';
 import FacilityIcon from './FacilityIcon';
 import { Facility } from './apitypes';
-export default function Spine({ className, style, stops, color, currentStopId }: {className?: string, style?:CSSProperties, color:string, currentStopId:string, stops:{
-  name: string;
-  municipality: string;
-  facilities: Facility[];
+type Stop = {
+	name: string;
+	municipality: string;
+	facilities: Facility[];
 	id: string;
 	delay: number;
-}[]}) {
-	function isStop(stop: any): stop is { type: 'stop', stop: { name: string; municipality: string; facilities: string[]; id: string; delay: number; }; } {
+};
+export default function Spine(
+	{ className, style, color, firstStop, lastStop, delays, renderedStops }:
+	{ className?: string, style?:CSSProperties, color:string, firstStop:Stop, lastStop:Stop, delays:{startAt:number, delay:number, span:number}[], renderedStops:({type:'skipped', count:number, municipality:string[]}|{type:'stop', stop:Stop})[]},
+) {
+	function isStop(stop: any): stop is { type: 'stop', stop:Stop; } {
 		return stop.type === 'stop';
 	}
-
-	const scores: { transition: number, facilityDefault: number, facility: Record<Facility, number> } = {
-		transition: 40,
-		facility: {
-			'near_health_clinic': 29,
-			'near_hospital': 30,
-			'near_university': 20,
-			'school': 5,
-			'near_police_station': 5,
-			'near_fire_station': 5,
-			'shopping': 10,
-			'near_historic_building': 3,
-			'transit_office': 25,
-			'light_rail': 50,
-			'subway': 51,
-			'train': 55,
-			'boat': 55,
-			'airport': 80,
-			'bike_sharing': 10,
-			'bike_parking': 10,
-			'car_parking': 10,
-		},
-		facilityDefault: 1,
-	};
-
-	const firstStop = stops[0];
-	const lastStop = stops[stops.length - 1];
-	const scoredStops = [];
-	for (let i = 1; i < stops.length - 1; i++) {
-		const stop = stops[i];
-		if (stop.facilities.length > 0) console.log(stop.facilities);
-		let score = 0;
-		for (let facility of stop.facilities) {
-			score += scores.facility[facility] || scores.facilityDefault;
-		}
-		const isTransition = i > 0 && i < stops.length - 1 && stops[i - 1].municipality != stop.municipality;
-		if (isTransition) {
-			score += scores.transition;
-			console.log('transition', stop.name);
-		}
-		scoredStops.push({ index: i - 1, stop, score, show: false });
-	}
-	const limit = 22;
-
-	let shownStopsCount = 1;
-	let sortedScoredStops = scoredStops.toSorted((a, b) => b.score - a.score);
-	console.log(sortedScoredStops.map(stop => stop.score));
-	for (let i = 0; i < sortedScoredStops.length; i++) {
-		const stop = sortedScoredStops[i];
-		let toAdd = 0;
-		if (!scoredStops[stop.index - 1]?.show && !scoredStops[stop.index + 1]?.show) {
-			toAdd = 2;
-		} else if (!scoredStops[stop.index - 1]?.show || !scoredStops[stop.index + 1]?.show) {
-			toAdd = 1;
-		}
-		if (toAdd + shownStopsCount <= limit) {
-			shownStopsCount += toAdd;
-			stop.show = true;
-		}
-	}
-	const delays = [];
-	const renderedStops:({type:'skipped', count:number, municipality:string[]}|{type:'stop', stop:typeof stops[0]})[] = [];
-	let accumulatedDelay = 0;
-	let delaySpan = 0;
-	let lastDelayIndex = 0;
-	for (let i = 0; i < scoredStops.length; i++) {
-		let stop = scoredStops[i];
-		let accumulatedMunicipalities = [];
-		let skippedStops = 0;
-		while (i < scoredStops.length && !stop.show) {
-			if (accumulatedMunicipalities.indexOf(stop.stop.municipality) == -1) accumulatedMunicipalities.push(stop.stop.municipality);
-			accumulatedDelay += stop.stop.delay;
-			i++;
-			stop = scoredStops[i];
-			skippedStops++;
-		}
-		if (skippedStops > 0) {
-			renderedStops.push({ type: 'skipped', count: skippedStops, municipality: accumulatedMunicipalities });
-			delaySpan++;
-		}
-		if (stop) {
-			renderedStops.push({ type: 'stop', stop: stop.stop });
-			delaySpan++;
-			accumulatedDelay += stop.stop.delay;
-		}
-		if (delaySpan >= 2 || i >= scoredStops.length - 1) {
-			delays.push({ startAt: lastDelayIndex, delay: accumulatedDelay, span: delaySpan });
-			lastDelayIndex = renderedStops.length;
-			delaySpan = 0;
-			accumulatedDelay = 0;
-		}
-	}
-	delays[delays.length - 1].span += 1;
-	delays[delays.length - 1].delay += lastStop.delay;
-	// const totalSpan = delays.reduce((acc, delay) => acc + (delay?.span || 0), 0);
-	// console.log(totalSpan, renderedStops.length);
-	// console.log(stops.map(stop => stop.name));
-	// console.log(delays.map(delay => [delay.startAt, delay.span]));
 
 	return (
 		<div className={className + ' grid grid-cols-[5mm_4mm_1fr] items-start h-full'} style={style}>
@@ -197,9 +103,9 @@ export default function Spine({ className, style, stops, color, currentStopId }:
 
 function StopLabel({ stop, isBold }: {stop:{ name: string; municipality: string; facilities: Facility[]; id: string; delay: number; }, isBold:boolean}) {
 	return <div className='flex flex-col'>
-		<div className={'flex justify-start items-center leading-3 max-w-[60mm] gap-2 ' + (isBold ? 'font-medium text-[10pt]' : 'font-normal text-[8pt]')}>
+		<div className={'flex justify-start items-center leading-3 max-w-[60mm] ' + (isBold ? 'font-medium text-[10pt]' : 'font-normal text-[8pt]')}>
 			<div className='truncate '>{stop.name}</div>
-			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[8mm] h-[6mm] -my-6' />)}
+			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6' />)}
 		</div>
 		<div className='text-[7pt] font-light leading-none'>
 			{stop.municipality}

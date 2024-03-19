@@ -1,6 +1,14 @@
 import Logo from './logo';
 
 export default function Header({ backgroundColor, color, lineId, firstStop, lastStop }: {backgroundColor: string, color: string, lineId:string, firstStop:string, lastStop:string}) {
+	const lineTypes:Record<string, string> = {
+		'#3D85C6': 'P',
+		'#C61D23': 'L',
+		'#FDB71A': 'R',
+		'#0C807E': 'M',
+		'#BB3E96': 'I',
+	};
+	let lineType = lineTypes[backgroundColor] || '?';
 	return (
 
 		<div className='p-[5mm] bg-black h-[30mm] text-white w-full flex items-center'>
@@ -26,7 +34,7 @@ export default function Header({ backgroundColor, color, lineId, firstStop, last
 									</svg>
 								</div>
 								<div className='flex bg-black rounded-[5mm] text-white h-[4mm] w-[4mm] text-[3mm] font-bold flex-row items-center justify-center'>
-									<p>B</p>
+									<p>{lineType}</p>
 								</div>
 								<div className='flex bg-white rounded-[5mm] h-[4mm] w-[4mm] text-black flex-row items-center justify-center'>
 									<svg
