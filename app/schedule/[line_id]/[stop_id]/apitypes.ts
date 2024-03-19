@@ -66,7 +66,7 @@ export type Stop = {
   region_id: string
   region_name: string
   wheelchair_boarding: any
-  facilities: string[]
+  facilities: Facility[]
   lines: string[]
   routes: string[]
   patterns: string[]
@@ -86,4 +86,24 @@ export type Schedule = {
   arrival_time: string
   arrival_time_operation: string
   travel_time: string
+}
+
+export enum Facility {
+	NEAR_HEALTH_CLINIC = 'near_health_clinic',
+	NEAR_HOSPITAL = 'near_hospital',
+	NEAR_UNIVERSITY = 'near_university',
+	NEAR_SCHOOL = 'school',
+	NEAR_POLICE_STATION = 'near_police_station',
+	NEAR_FIRE_STATION = 'near_fire_station',
+	NEAR_SHOPPING = 'shopping',
+	NEAR_HISTORIC_BUILDING = 'near_historic_building',
+	NEAR_TRANSIT_OFFICE = 'transit_office',
+	LIGHT_RAIL = 'light_rail',
+	SUBWAY = 'subway',
+	TRAIN = 'train',
+	BOAT = 'boat',
+	AIRPORT = 'airport',
+	BIKE_SHARING = 'bike_sharing',
+	BIKE_PARKING = 'bike_parking',
+	CAR_PARKING = 'car_parking',
 }

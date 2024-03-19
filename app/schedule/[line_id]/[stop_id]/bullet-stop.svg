@@ -1,0 +1,7 @@
+<svg width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+    <circle cx="2mm" cy="2mm" r="2mm" fill="black" />
+    <line x1="1.2mm" y1="1.2mm" x2="2.8mm" y2="2.8mm" style="stroke:white;stroke-width:.35mm" />
+    <line x1="1.2mm" y1="2.8mm" x2="2.8mm" y2="1.2mm" style="stroke:white;stroke-width:.35mm" />
+    
+</svg>
