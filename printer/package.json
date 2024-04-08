@@ -4,11 +4,14 @@
     "typescript": "^5.4.2"
   },
   "dependencies": {
+    "@types/object-hash": "^3.0.6",
     "@typescript-eslint/parser": "^7.3.1",
     "eslint": "^8.57.0",
+    "object-hash": "^3.0.0",
     "puppeteer": "^22.5.0"
   },
   "scripts": {
+    "build": "tsc",
     "start": "tsc && node build/index.js"
   }
 }

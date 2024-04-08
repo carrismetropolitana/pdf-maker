@@ -1,0 +1,70 @@
+name: Build & Publish Docker Images
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  #
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  pdf-maker-renderer:
+    name: 'Build Docker Image (renderer)'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@main
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@master
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker Image - renderer
+        uses: docker/build-push-action@master
+        with:
+          push: true
+          context: ./renderer
+          file: ./renderer/Dockerfile
+          tags: ghcr.io/carrismetropolitana/pdf-maker-renderer:${{ github.ref_name }}
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+  pdf-maker-printer:
+    name: 'Build Docker Image (printer)'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@main
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@master
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker Image - printer
+        uses: docker/build-push-action@master
+        with:
+          push: true
+          context: ./printer
+          file: ./printer/Dockerfile
+          tags: ghcr.io/carrismetropolitana/pdf-maker-printer:${{ github.ref_name }}

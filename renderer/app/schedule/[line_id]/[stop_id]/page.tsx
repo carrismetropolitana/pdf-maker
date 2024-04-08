@@ -7,10 +7,12 @@ import Footer from './Footer';
 import FacilityIcon from './FacilityIcon';
 
 const BASE_URL = 'http://localhost:5051';
+const QR_URL = 'https://qr.carrismetropolitana.pt';
 
 export default async function Page({ params }:{params:{line_id:string, stop_id:string}}) {
 	const timetableRes = await fetch(`${BASE_URL}/timetables/${params.line_id}/${params.stop_id}`);
 	const timetable: Timetable = await timetableRes.json();
+	console.log(timetable);
 	const patternRes = await fetch(BASE_URL + '/patterns/' + timetable.patternForDisplay);
 	const pattern: Pattern = await patternRes.json();
 	const stopInfoRes = await fetch(BASE_URL + '/stops/' + pattern.path[1].Stop.id);
@@ -142,7 +144,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 					<Schedule className='justify-self-end' timetable={timetable} />
 				</div>
 			</div>
-			<div className='fixed bottom-0 w-full'><Footer line_id={params.line_id} stop_id={params.stop_id} base_url={BASE_URL} facilities={Array.from(facilitySet)}/></div>
+			<div className='fixed bottom-0 w-full'><Footer line_id={params.line_id} stop_id={params.stop_id} user_url={QR_URL} facilities={Array.from(facilitySet)}/></div>
 		</div>
 	);
 }

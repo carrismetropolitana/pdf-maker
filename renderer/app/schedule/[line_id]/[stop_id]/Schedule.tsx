@@ -1,5 +1,7 @@
 import { CSSProperties } from 'react';
 import { Timetable, TimetableEntry, TimetablePeriod } from './apitypes';
+import hash from 'object-hash';
+import { title } from 'process';
 
 export default function Schedule({ className, style, timetable }: {className?: string, style?: CSSProperties, timetable:Timetable}) {
 	return (
@@ -10,13 +12,45 @@ export default function Schedule({ className, style, timetable }: {className?: s
 	);
 }
 function PeriodTable({ period }:{period:TimetablePeriod}) {
+	// Merge timetables which are the same, and their names
+	let possibilities:['weekdays'|'saturdays'|'sundays_holidays', string][] = [['weekdays', 'Dias Úteis'], ['saturdays', 'Sábados'], ['sundays_holidays', 'Domingos e Feriados']];
+	let hashed = new Map<string, [string[], TimetableEntry[]]>;
+	for (let p of possibilities) {
+		let times = period[p[0]];
+		if (times.length == 0) continue;
+		let h = hash(times, { respectType: false });
+		let prev = hashed.get(h);
+		if (prev === undefined) {
+			hashed.set(h, [[p[1]], times]);
+		} else {
+			prev[0].push(p[1]);
+		}
+	}
+	let toRender = Array.from(hashed.values()).map(v => {
+		// Build title string, using ' e ' for the last element, unless it already has it,
+		// as is the case with Domingos e Feriados
+		let [titles, times] = v;
+		let str = '';
+		for (let i = 0; i < titles.length; i++) {
+			let t = titles[i];
+			if (i == titles.length - 1 && !t.includes(' e ') && i > 0) str += ' e ' + t;
+			else if (i > 0) str += ', ' + t;
+			else str += t;
+		}
+		return [str, times] as [string, TimetableEntry[]];
+	}).sort((a, b) => {
+		// Sort the names so that we always get strings starting with Dias Úteis first, and Domingos last
+		if (a[0].startsWith('Dias Úteis')) return -1;
+		if (b[0].startsWith('Dias Úteis')) return 1;
+		if (a[0].startsWith('Domingos')) return 1;
+		if (b[0].startsWith('Domingos')) return -1;
+		return 0;
+	});
 	return (
 		<div>
 			<h2 className='text-xl'>{period.period_name}</h2>
 			<div className='flex flex-col gap-4'>
-				<SubTable title={'Dias Úteis'} times={period.weekdays}/>
-				<SubTable title={'Sábados'} times={period.saturdays}/>
-				<SubTable title={'Domingos e Feriados'} times={period.sundays_holidays}/>
+				{toRender.map(([title, times], i) => <SubTable key={i} title={title} times={times}/>)}
 			</div>
 		</div>
 	);
@@ -44,8 +78,8 @@ function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
 				<div className='text-center text-[7.5pt]'>Min.</div>
 			</div>
 			{timesByHour.map((minutes, hour) => <div key={hour} className='flex flex-col items-stretch w-4 text-[7mm]'>
-				<div className={'bg-black text-white text-center font-semibold text-[8pt] h-[4mm] leading-none flex items-center justify-center ' + (hour == timesByHour.length - 1 ? ' pr-1 -mr-1 rounded-r-full' : '')}>{hour}</div>
-				{minutes.map((entry, i) => <div key={i} className={'text-[7.5pt] text-center relative'}>{entry.minute.toString().padStart(2, '0')}{entry.exception ? <div className='absolute top-[2pt] -right-[1pt] font-semibold text-[4pt]'>{entry.exception}</div> : null}</div>)}
+				<div className={'bg-black text-white text-center font-semibold text-[8pt] h-[4mm] leading-none flex items-center justify-center relative ' + (hour == timesByHour.length - 1 ? ' pr-1 -mr-1 rounded-r-full' : '')}>{hour}</div>
+				{minutes.map((entry, i) => <div key={i} className={'text-[7.5pt] text-center relative self-center'}>{entry.minute.toString().padStart(2, '0')}{entry.exception ? <div className='absolute top-[0pt] left-full font-semibold text-[4pt]'>{entry.exception}</div> : null}</div>)}
 			</div>)
 			}
 		</div>

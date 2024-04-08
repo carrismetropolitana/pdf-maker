@@ -73,7 +73,6 @@ async function processSegment(segment: [string, string][], page: Page) {
 }
 
 async function parallelGen(PARALLEL: number, timetableIndex: [string, string][]) {
-	console.log('Starting parallel generation...');
 	let browserOpenStart = process.hrtime();
 	const browser = await Puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox']	});
 	const pages = await Promise.all(Array.from({ length: PARALLEL }, () => browser.newPage()));

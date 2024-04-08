@@ -4,8 +4,8 @@ import React from 'react';
 import Phone from './Phone';
 import { Facility } from './apitypes';
 import FacilityIcon from './FacilityIcon';
-export default async function Footer({ line_id, stop_id, base_url, facilities }: { line_id: string, stop_id: string, base_url:string, facilities:Facility[]}) {
-	let dataurl = await QRCode.toString(`${base_url}/${line_id}/${stop_id}`, { errorCorrectionLevel: 'H', margin: 0, type: 'svg' });
+export default async function Footer({ line_id, stop_id, user_url, facilities }: { line_id: string, stop_id: string, user_url:string, facilities:Facility[]}) {
+	let dataurl = await QRCode.toString(`${user_url}/${line_id}/${stop_id}`, { errorCorrectionLevel: 'H', margin: 0, type: 'svg' });
 
 	const facilityDescriptions:Record<Facility, string> = {
 		airport: 'Aeroporto',

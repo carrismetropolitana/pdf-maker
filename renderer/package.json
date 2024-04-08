@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/object-hash": "^3.0.6",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18",
     "@types/react-dom": "^18",
