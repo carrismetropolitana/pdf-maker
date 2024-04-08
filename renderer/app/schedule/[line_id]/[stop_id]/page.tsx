@@ -4,18 +4,17 @@ import Spine from './Spine';
 import Schedule from './Schedule';
 import ScheduleInfo from './ScheduleInfo';
 import Footer from './Footer';
-import FacilityIcon from './FacilityIcon';
 
-const BASE_URL = 'http://localhost:5051';
-const QR_URL = 'https://qr.carrismetropolitana.pt';
+const API_URL = process.env.API_URL || 'http://localhost:5051';
+const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt';
 
 export default async function Page({ params }:{params:{line_id:string, stop_id:string}}) {
-	const timetableRes = await fetch(`${BASE_URL}/timetables/${params.line_id}/${params.stop_id}`);
+	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.stop_id}`);
 	const timetable: Timetable = await timetableRes.json();
 	console.log(timetable);
-	const patternRes = await fetch(BASE_URL + '/patterns/' + timetable.patternForDisplay);
+	const patternRes = await fetch(API_URL + '/patterns/' + timetable.patternForDisplay);
 	const pattern: Pattern = await patternRes.json();
-	const stopInfoRes = await fetch(BASE_URL + '/stops/' + pattern.path[1].Stop.id);
+	const stopInfoRes = await fetch(API_URL + '/stops/' + pattern.path[1].Stop.id);
 	const stopInfo = await stopInfoRes.json();
 	const stops = pattern.path.map(stop => ({
 		name: stop.Stop.name,

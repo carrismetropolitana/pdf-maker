@@ -1,7 +1,6 @@
 import { CSSProperties } from 'react';
 import { Timetable, TimetableEntry, TimetablePeriod } from './apitypes';
 import hash from 'object-hash';
-import { title } from 'process';
 
 export default function Schedule({ className, style, timetable }: {className?: string, style?: CSSProperties, timetable:Timetable}) {
 	return (

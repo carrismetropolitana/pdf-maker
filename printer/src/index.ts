@@ -1,12 +1,12 @@
+import 'dotenv/config';
 import Puppeteer, { Page } from 'puppeteer';
 import process from 'process';
-import fs from 'fs';
 type StopId = string;
 type LineId = string;
 
-const API_URL = 'http://localhost:5051';
-const RENDER_URL = 'http://localhost:3000/schedule';
-const PARALLEL = 16;
+const API_URL = process.env.API_URL || 'http://localhost:5051';
+const RENDER_URL = process.env.RENDER_URL || 'http://localhost:3000/schedule';
+const PARALLEL = parseInt(process.env.TABS) || 16;
 const PRINT_INTERVAL = 100;
 
 let count = 0;
