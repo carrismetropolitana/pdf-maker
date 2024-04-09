@@ -42,7 +42,7 @@ export type Pattern = {
 }
 
 export type Path = {
-  Stop: Stop
+  stop: Stop
   stop_sequence: number
   allow_pickup: boolean
   allow_drop_off: boolean

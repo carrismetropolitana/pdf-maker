@@ -11,16 +11,16 @@ const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt';
 export default async function Page({ params }:{params:{line_id:string, stop_id:string}}) {
 	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.stop_id}`);
 	const timetable: Timetable = await timetableRes.json();
-	console.log(timetable);
+	// console.log(timetable);
 	const patternRes = await fetch(API_URL + '/patterns/' + timetable.patternForDisplay);
 	const pattern: Pattern = await patternRes.json();
-	const stopInfoRes = await fetch(API_URL + '/stops/' + pattern.path[1].Stop.id);
+	const stopInfoRes = await fetch(API_URL + '/stops/' + pattern.path[1].stop.id);
 	const stopInfo = await stopInfoRes.json();
 	const stops = pattern.path.map(stop => ({
-		name: stop.Stop.name,
-		municipality: stop.Stop.municipality_name,
-		facilities: stop.Stop.facilities,
-		id: stop.Stop.id,
+		name: stop.stop.name,
+		municipality: stop.stop.municipality_name,
+		facilities: stop.stop.facilities,
+		id: stop.stop.id,
 		delay: 1,
 	}));
 	// console.log(stops);
@@ -135,7 +135,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 
 	return (
 		<div>
-			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} firstStop={pattern.path[0].Stop.name} lastStop={pattern.path[pattern.path.length - 1].Stop.name} />
+			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} firstStop={pattern.path[0].stop.name} lastStop={pattern.path[pattern.path.length - 1].stop.name} />
 			<div className='flex flex-row w-full p-4'>
 				<Spine className='grow' color={pattern.color} firstStop={firstStop} lastStop={lastStop} delays={delays} renderedStops={renderedStops} />
 				<div className='text-neutral-800 w-[430px] flex flex-col gap-8'>

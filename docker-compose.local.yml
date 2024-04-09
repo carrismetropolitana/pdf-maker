@@ -1,0 +1,129 @@
+version: '3.9'
+
+volumes:
+  certbotdata:
+  serverdb:
+
+services:
+  #
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  # tts-generator:
+  #   image: ghcr.io/carrismetropolitana/tts-generator:production
+  #   restart: unless-stopped
+  #   logging:
+  #     options:
+  #       max-size: '1m'
+  #       max-file: '1'
+  #   volumes:
+  #     - ./static/tts/live:/app/outputs
+  #     - ./tts_generator/credentials:/app/credentials
+  #     - ./tts_generator/trackers:/app/trackers
+  #   environment:
+  #     - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/google-cloud-key.json
+
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  serverdb:
+    image: redis:alpine
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    volumes:
+      - serverdb:/data
+    environment:
+      - REDIS_ARGS=--save 5 1
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  api:
+    image: ghcr.io/carrismetropolitana/api-server:beta
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - SERVERDB_HOST=serverdb
+      # - MONGODB_URI=mongodb://mongodbuser:mongodbpassword@localhost:27017/production?authSource=admin
+    # secrets:
+    #   - realtimedbkey
+    depends_on:
+      - serverdb
+      - networkdb
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  networkdb:
+    image: postgres:alpine
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - POSTGRES_USER=networkdbuser
+      - POSTGRES_PASSWORD=networkdbpassword
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  parse-network:
+    image: ghcr.io/carrismetropolitana/api-parse-network:beta
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - SERVERDB_HOST=serverdb
+      - NETWORKDB_HOST=networkdb
+      - NETWORKDB_USER=networkdbuser
+      - NETWORKDB_PASSWORD=networkdbpassword
+      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/feeds/CM_GTFS_A3.zip
+    depends_on:
+      - serverdb
+      - networkdb
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  pdf-printer:
+    build: 
+      context: ./printer
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    volumes:
+      - ./static/pdf-test:/app/pdfs
+    environment:
+      - API_URL=http://api:5050
+      - RENDER_URL=http://pdf-renderer:3000/schedule
+      - PARALLEL=2
+    depends_on:
+      - pdf-renderer
+
+  pdf-renderer:
+    build:
+      context: ./renderer
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - API_URL=http://api:5050
+    depends_on:
+      - api
