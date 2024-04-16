@@ -57,8 +57,8 @@ export type Stop = {
   lat: string
   lon: string
   locality: string
-  parish_id: any
-  parish_name: any
+  parish_id: string|null
+  parish_name: string|null
   municipality_id: string
   municipality_name: string
   district_id: string

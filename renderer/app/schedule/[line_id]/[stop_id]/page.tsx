@@ -30,7 +30,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 	const stops = pattern.path.map(stop => ({
 		name: stop.stop.name,
 		municipality: stop.stop.municipality_name,
-		parish: stop.stop.parish_name,
+		locality: stop.stop.locality,
 		facilities: stop.stop.facilities,
 		id: stop.stop.id,
 		delay: 1,

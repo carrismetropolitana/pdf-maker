@@ -5,7 +5,7 @@ import { Facility } from './apitypes';
 type Stop = {
 	name: string;
 	municipality: string;
-	parish: string;
+	locality: string;
 	facilities: Facility[];
 	id: string;
 	delay: number;
@@ -124,7 +124,7 @@ function StopLabel({ stop, isBold }: {stop:Stop, isBold:boolean}) {
 			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6' />)}
 		</div>
 		<div className='text-[7pt] font-light leading-none'>
-			{stop.parish && stop.parish + ','}{stop.municipality}
+			{stop.locality && stop.locality + ', '}{stop.municipality}
 		</div>
 	</div>;
 }
