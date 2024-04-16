@@ -5,6 +5,7 @@ import { Facility } from './apitypes';
 type Stop = {
 	name: string;
 	municipality: string;
+	parish: string;
 	facilities: Facility[];
 	id: string;
 	delay: number;
@@ -116,14 +117,14 @@ export default function Spine(
 		</div>);
 }
 
-function StopLabel({ stop, isBold }: {stop:{ name: string; municipality: string; facilities: Facility[]; id: string; delay: number; }, isBold:boolean}) {
+function StopLabel({ stop, isBold }: {stop:Stop, isBold:boolean}) {
 	return <div className='flex flex-col'>
 		<div className={'flex justify-start items-center leading-3 max-w-[60mm] ' + (isBold ? 'font-medium text-[10pt]' : 'font-normal text-[8pt]')}>
 			<div className='overflow-ellipsis whitespace-nowrap '>{stop.name}</div>
 			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6' />)}
 		</div>
 		<div className='text-[7pt] font-light leading-none'>
-			{stop.municipality}
+			{stop.parish && stop.parish + ','}{stop.municipality}
 		</div>
 	</div>;
 }
