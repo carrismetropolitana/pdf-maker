@@ -11,11 +11,22 @@ const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt';
 export default async function Page({ params }:{params:{line_id:string, stop_id:string}}) {
 	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.stop_id}`);
 	const timetable: Timetable = await timetableRes.json();
-	// console.log(timetable);
-	const patternRes = await fetch(API_URL + '/patterns/' + timetable.patternForDisplay);
+	// console.log(JSON.stringify(timetable, null, 2));
+	const patternURL = `${API_URL}/patterns/${timetable.patternForDisplay}`;
+	const patternRes = await fetch(patternURL);
 	const pattern: Pattern = await patternRes.json();
-	const stopInfoRes = await fetch(API_URL + '/stops/' + pattern.path[1].stop.id);
+	if (!pattern.path || !pattern.path[1] || !pattern.path[1].stop) {
+		console.error(patternURL, 'pattern.path[1].stop is undefined, pattern:', pattern);
+		return;
+	}
+	const stopInfoURL = `${API_URL}/stops/${pattern.path[1].stop.id}`;
+	const stopInfoRes = await fetch(stopInfoURL);
 	const stopInfo = await stopInfoRes.json();
+
+	if (!stopInfo) {
+		console.error(stopInfoURL, 'stopInfo is undefined', stopInfo);
+		return;
+	}
 	const stops = pattern.path.map(stop => ({
 		name: stop.stop.name,
 		municipality: stop.stop.municipality_name,
@@ -28,7 +39,8 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 	// date in dd.mm.yyyy
 	const today = (new Date).toISOString().split('T')[0].split('-').reverse().join('.');
 
-	const scores: { transition: number, facilityDefault: number, facility: Record<Facility, number> } = {
+	const scores = {
+		current: 1000,
 		transition: 40,
 		facility: {
 			'near_health_clinic': 29,
@@ -50,7 +62,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 			'car_parking': 10,
 		},
 		facilityDefault: 1,
-	};
+	} as const;
 
 	const firstStop = stops[0];
 	const lastStop = stops[stops.length - 1];
@@ -65,6 +77,9 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		const isTransition = i > 0 && i < stops.length - 1 && stops[i - 1].municipality != stop.municipality;
 		if (isTransition) {
 			score += scores.transition;
+		}
+		if (stop.id == params.stop_id) {
+			score += scores.current;
 		}
 		scoredStops.push({ index: i - 1, stop, score, show: false });
 	}
@@ -137,8 +152,8 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		<div>
 			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} firstStop={pattern.path[0].stop.name} lastStop={pattern.path[pattern.path.length - 1].stop.name} />
 			<div className='flex flex-row w-full p-4'>
-				<Spine className='grow' color={pattern.color} firstStop={firstStop} lastStop={lastStop} delays={delays} renderedStops={renderedStops} />
-				<div className='text-neutral-800 w-[430px] flex flex-col gap-8'>
+				<Spine className='grow' color={pattern.color} firstStop={firstStop} lastStop={lastStop} delays={delays} renderedStops={renderedStops} currentStopId={params.stop_id} />
+				<div className='text-neutral-800 w-[430px] flex flex-col gap-2'>
 					<ScheduleInfo name={stopInfo.name } stopId={params.stop_id} startDate={today}/>
 					<Schedule className='justify-self-end' timetable={timetable} />
 				</div>

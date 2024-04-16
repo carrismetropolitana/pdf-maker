@@ -88,7 +88,7 @@ services:
       - NETWORKDB_HOST=networkdb
       - NETWORKDB_USER=networkdbuser
       - NETWORKDB_PASSWORD=networkdbpassword
-      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/feeds/CM_GTFS_A3.zip
+      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
     depends_on:
       - serverdb
       - networkdb

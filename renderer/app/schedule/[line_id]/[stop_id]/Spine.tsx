@@ -10,8 +10,17 @@ type Stop = {
 	delay: number;
 };
 export default function Spine(
-	{ className, style, color, firstStop, lastStop, delays, renderedStops }:
-	{ className?: string, style?:CSSProperties, color:string, firstStop:Stop, lastStop:Stop, delays:{startAt:number, delay:number, span:number}[], renderedStops:({type:'skipped', count:number, municipality:string[]}|{type:'stop', stop:Stop})[]},
+	{ className, style, color, firstStop, lastStop, delays, renderedStops, currentStopId }:
+	{
+		className?: string, style?:CSSProperties, color:string,
+		firstStop:Stop, lastStop:Stop, currentStopId:string,
+		delays:{
+			startAt:number, delay:number, span:number}[],
+			renderedStops:(
+				{type:'skipped', count:number, municipality:string[]}|
+				{type:'stop', stop:Stop}
+			)[]
+	},
 ) {
 	function isStop(stop: any): stop is { type: 'stop', stop:Stop; } {
 		return stop.type === 'stop';
@@ -63,9 +72,15 @@ export default function Spine(
 				<div className='absolute top-1/2 flex items-center gap-2 h-8'>
 					{isStop(stop) ?
 						<Fragment>
+							{stop.stop.id === currentStopId ?
+								<div className='relative -mr-2'>
+									<div className='absolute top-0 bottom-0 flex items-center right-0'><div className='h-[4mm] w-[4mm] rounded-full flex items-center justify-center bg-black'>
+										<div className='h-[2mm] w-[2mm] rounded-full bg-white'></div>
+									</div></div>
+								</div> : ''}
 							<div className='bg-black h-px w-[2mm]' >
 							</div>
-							<StopLabel stop={stop.stop} isBold={false}/>
+							<StopLabel stop={stop.stop} isBold={stop.stop.id === currentStopId}/>
 						</Fragment> :
 						<Fragment>
 							<div className='h-16 flex flex-col justify-evenly'>
@@ -104,7 +119,7 @@ export default function Spine(
 function StopLabel({ stop, isBold }: {stop:{ name: string; municipality: string; facilities: Facility[]; id: string; delay: number; }, isBold:boolean}) {
 	return <div className='flex flex-col'>
 		<div className={'flex justify-start items-center leading-3 max-w-[60mm] ' + (isBold ? 'font-medium text-[10pt]' : 'font-normal text-[8pt]')}>
-			<div className='truncate '>{stop.name}</div>
+			<div className='overflow-ellipsis whitespace-nowrap '>{stop.name}</div>
 			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6' />)}
 		</div>
 		<div className='text-[7pt] font-light leading-none'>

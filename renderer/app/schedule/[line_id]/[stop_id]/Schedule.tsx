@@ -3,8 +3,10 @@ import { Timetable, TimetableEntry, TimetablePeriod } from './apitypes';
 import hash from 'object-hash';
 
 export default function Schedule({ className, style, timetable }: {className?: string, style?: CSSProperties, timetable:Timetable}) {
+	//
+	console.log(timetable.periods.map(p => [p.period_id, p.period_name]));
 	return (
-		<div className={className + ' flex flex-col gap-10'} style={style}>
+		<div className={className + ' flex flex-col gap-5'} style={style}>
 			{timetable.periods.map((period, i) => <PeriodTable key={i} period={period} />)}
 			<Exceptions exceptions={timetable.exceptions}/>
 		</div>
@@ -12,7 +14,7 @@ export default function Schedule({ className, style, timetable }: {className?: s
 }
 function PeriodTable({ period }:{period:TimetablePeriod}) {
 	// Merge timetables which are the same, and their names
-	let possibilities:['weekdays'|'saturdays'|'sundays_holidays', string][] = [['weekdays', 'Dias Úteis'], ['saturdays', 'Sábados'], ['sundays_holidays', 'Domingos e Feriados']];
+	let possibilities = [['weekdays', 'Dias Úteis'], ['saturdays', 'Sábados'], ['sundays_holidays', 'Domingos e Feriados']] as const;
 	let hashed = new Map<string, [string[], TimetableEntry[]]>;
 	for (let p of possibilities) {
 		let times = period[p[0]];
@@ -48,8 +50,8 @@ function PeriodTable({ period }:{period:TimetablePeriod}) {
 	return (
 		<div>
 			<h2 className='text-xl'>{period.period_name}</h2>
-			<div className='flex flex-col gap-4'>
-				{toRender.map(([title, times], i) => <SubTable key={i} title={title} times={times}/>)}
+			<div className='flex flex-col gap-2'>
+				{toRender.length > 0 ? toRender.map(([title, times], i) => <SubTable key={i} title={title} times={times}/>) : <div className='font-semibold text-[8pt]'>Não há horários de passagem neste período</div>}
 			</div>
 		</div>
 	);
