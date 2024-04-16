@@ -4,7 +4,6 @@ import hash from 'object-hash';
 
 export default function Schedule({ className, style, timetable }: {className?: string, style?: CSSProperties, timetable:Timetable}) {
 	//
-	console.log(timetable.periods.map(p => [p.period_id, p.period_name]));
 	return (
 		<div className={className + ' flex flex-col gap-5'} style={style}>
 			{timetable.periods.map((period, i) => <PeriodTable key={i} period={period} />)}
