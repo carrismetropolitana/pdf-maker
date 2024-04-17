@@ -4,7 +4,7 @@ import process from 'process';
 type StopId = string;
 type LineId = string;
 
-const API_URL = process.env.API_URL || 'http://localhost:5051';
+const API_URL = process.env.API_URL || 'http://localhost:5050';
 const RENDER_URL = process.env.RENDER_URL || 'http://localhost:3000/schedule';
 const PARALLEL = parseInt(process.env.TABS) || 16;
 const PRINT_INTERVAL = 100;
@@ -29,7 +29,7 @@ function secondsToHms(d: number) {
 	return hDisplay + mDisplay + sDisplay;
 }
 
-async function fetchTimetables():Promise<[StopId, LineId][]> {
+async function fetchTimetables():Promise<{updated_at:string, pairs:[StopId, LineId][]}> {
 	console.log('Fetching timetables...');
 	let response = await fetch(`${API_URL}/timetables`);
 	console.log('Timetables fetched successfully');
@@ -101,12 +101,23 @@ async function parallelGen(PARALLEL: number, timetableIndex: [string, string][])
 	await browser.close();
 }
 
+let updatedAt = '';
 async function main() {
-	const timetableIndex = await fetchTimetables();
-	total = timetableIndex.length;
-	console.log(`Generating ${total} schedules with ${PARALLEL} workers...`);
+	// eslint-disable-next-line no-constant-condition
+	while (true) {
+		const timetableIndex = await fetchTimetables();
+		if (timetableIndex.updated_at === updatedAt) {
+			console.log('No new timetables found');
+			// Sleep for 5 mins
+			await new Promise(resolve => setTimeout(resolve, 1000 * 60 * 5));
+			return;
+		}
+		const timeTables = timetableIndex.pairs;
+		total = timeTables.length;
+		console.log(`Generating ${total} schedules with ${PARALLEL} workers...`);
 
-	await parallelGen(PARALLEL, timetableIndex);
+		await parallelGen(PARALLEL, timeTables);
+	}
 }
 
 main();
