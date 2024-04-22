@@ -6,8 +6,11 @@ type LineId = string;
 
 const API_URL = process.env.API_URL || 'http://localhost:5050';
 const RENDER_URL = process.env.RENDER_URL || 'http://localhost:3000/schedule';
-const PARALLEL = parseInt(process.env.TABS) || 16;
+const PARALLEL = parseInt(process.env.TABS) || 12;
 const PRINT_INTERVAL = 100;
+console.log(`API_URL: ${API_URL}`);
+console.log(`RENDER_URL: ${RENDER_URL}`);
+console.log(`PARALLEL: ${PARALLEL}`);
 
 let count = 0;
 let total = 0;
@@ -29,7 +32,7 @@ function secondsToHms(d: number) {
 	return hDisplay + mDisplay + sDisplay;
 }
 
-async function fetchTimetables():Promise<{updated_at:string, pairs:[StopId, LineId][]}> {
+async function fetchTimetables():Promise<{updated_at:string, pairs:string[]}> {
 	console.log('Fetching timetables...');
 	let response = await fetch(`${API_URL}/timetables`);
 	console.log('Timetables fetched successfully');
@@ -37,17 +40,17 @@ async function fetchTimetables():Promise<{updated_at:string, pairs:[StopId, Line
 }
 
 let prevStart = process.hrtime();
-async function saveTimetableAsPDF(page: Page, line_id: string, stop_id: string) {
+async function saveTimetableAsPDF(page: Page, path: string) {
 	let success = false;
 	while (!success) {
 		try {
 			let gotoStart = process.hrtime();
-			await page.goto(`${RENDER_URL}/${line_id}/${stop_id}`, { waitUntil: 'load' });
+			await page.goto(`${RENDER_URL}/${path}`, { waitUntil: 'load' });
 			let gotoEnd = process.hrtime(gotoStart);
 			pageGotoTime += gotoEnd[0] + gotoEnd[1] / 1e9;
 
 			let renderStart = process.hrtime();
-			await page.pdf({ path: `pdfs/timetable-${line_id}-${stop_id}.pdf`, format: 'A4', printBackground: true });
+			await page.pdf({ path: `pdfs/timetable-${path.replace(/\//g, '-')}.pdf`, format: 'A4', printBackground: true });
 			let renderEnd = process.hrtime(renderStart);
 			pdfRenderTime += renderEnd[0] + renderEnd[1] / 1e9;
 
@@ -66,13 +69,13 @@ async function saveTimetableAsPDF(page: Page, line_id: string, stop_id: string) 
 	}
 }
 
-async function processSegment(segment: [string, string][], page: Page) {
-	for (let [line_id, stop_id] of segment) {
-		await saveTimetableAsPDF(page, line_id, stop_id);
+async function processSegment(paths: string[], page: Page) {
+	for (let path of paths) {
+		await saveTimetableAsPDF(page, path);
 	}
 }
 
-async function parallelGen(PARALLEL: number, timetableIndex: [string, string][]) {
+async function parallelGen(PARALLEL: number, timetablePaths: string[]) {
 	let browserOpenStart = process.hrtime();
 	const browser = await Puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox']	});
 	const pages = await Promise.all(Array.from({ length: PARALLEL }, () => browser.newPage()));
@@ -83,10 +86,10 @@ async function parallelGen(PARALLEL: number, timetableIndex: [string, string][])
 		await page.setJavaScriptEnabled(false);
 	}
 	start = process.hrtime();
-	const segments: [string, string][][] = [];
-	const segmentSize = Math.ceil(timetableIndex.length / PARALLEL);
+	const segments: string[][] = [];
+	const segmentSize = Math.ceil(timetablePaths.length / PARALLEL);
 	for (let i = 0; i < PARALLEL; i++) {
-		segments.push(timetableIndex.slice(i * segmentSize, (i + 1) * segmentSize));
+		segments.push(timetablePaths.slice(i * segmentSize, (i + 1) * segmentSize));
 	}
 
 	await Promise.all(pages.map((page, index) => processSegment(segments[index], page)));

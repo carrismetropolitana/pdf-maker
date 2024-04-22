@@ -5,11 +5,11 @@ import Schedule from './Schedule';
 import ScheduleInfo from './ScheduleInfo';
 import Footer from './Footer';
 
-const API_URL = process.env.API_URL || 'http://localhost:5051';
+const API_URL = process.env.API_URL || 'http://localhost:5050';
 const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt';
 
-export default async function Page({ params }:{params:{line_id:string, stop_id:string}}) {
-	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.stop_id}`);
+export default async function Page({ params }:{params:{line_id:string, stop_id:string, direction_id:string}}) {
+	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.direction_id}/${params.stop_id}`);
 	const timetable: Timetable = await timetableRes.json();
 	// console.log(JSON.stringify(timetable, null, 2));
 	const patternURL = `${API_URL}/patterns/${timetable.patternForDisplay}`;
@@ -19,7 +19,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		console.error(patternURL, 'pattern.path[1].stop is undefined, pattern:', pattern);
 		return;
 	}
-	const stopInfoURL = `${API_URL}/stops/${pattern.path[1].stop.id}`;
+	const stopInfoURL = `${API_URL}/stops/${params.stop_id}`;
 	const stopInfoRes = await fetch(stopInfoURL);
 	const stopInfo = await stopInfoRes.json();
 
@@ -103,23 +103,27 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		}
 	}
 	const delays = [];
-	const renderedStops:({type:'skipped', count:number, municipality:string[]}|{type:'stop', stop:typeof stops[0]})[] = [];
+	const renderedStops:({type:'skipped', count:number, municipality:string[], stops:(typeof stops[0])[]}|{type:'stop', stop:typeof stops[0]})[] = [];
 	let accumulatedDelay = 0;
 	let delaySpan = 0;
 	let lastDelayIndex = 0;
 	for (let i = 0; i < scoredStops.length; i++) {
 		let stop = scoredStops[i];
 		let accumulatedMunicipalities = [];
+		let accumulatedStops = [];
 		let skippedStops = 0;
 		while (i < scoredStops.length && !stop.show) {
-			if (accumulatedMunicipalities.indexOf(stop.stop.municipality) == -1) accumulatedMunicipalities.push(stop.stop.municipality);
+			if (accumulatedMunicipalities.indexOf(stop.stop.municipality) == -1) {
+				accumulatedMunicipalities.push(stop.stop.municipality);
+				accumulatedStops.push(stop.stop);
+			}
 			accumulatedDelay += stop.stop.delay;
 			i++;
 			stop = scoredStops[i];
 			skippedStops++;
 		}
 		if (skippedStops > 0) {
-			renderedStops.push({ type: 'skipped', count: skippedStops, municipality: accumulatedMunicipalities });
+			renderedStops.push({ type: 'skipped', count: skippedStops, municipality: accumulatedMunicipalities, stops: accumulatedStops });
 			delaySpan++;
 		}
 		if (stop) {
@@ -136,6 +140,14 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 	}
 	delays[delays.length - 1].span += 1;
 	delays[delays.length - 1].delay += lastStop.delay;
+
+	for (let stopIndex in renderedStops) {
+		const stop = renderedStops[stopIndex];
+		if (stop.type == 'skipped' && stop.count == 1) {
+			// console.log(stop.municipality);
+			renderedStops[stopIndex] = { type: 'stop', stop: stop.stops[0] };
+		}
+	}
 	// const totalSpan = delays.reduce((acc, delay) => acc + (delay?.span || 0), 0);
 	// console.log(totalSpan, renderedStops.length);
 	// console.log(stops.map(stop => stop.name));

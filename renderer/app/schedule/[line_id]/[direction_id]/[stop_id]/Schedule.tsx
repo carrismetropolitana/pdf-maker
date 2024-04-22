@@ -4,9 +4,43 @@ import hash from 'object-hash';
 
 export default function Schedule({ className, style, timetable }: {className?: string, style?: CSSProperties, timetable:Timetable}) {
 	//
+	let hashed = new Map<string, [string[], TimetablePeriod]>;
+	for (let period of timetable.periods) {
+		let h = hash([period.weekdays, period.saturdays, period.sundays_holidays], { respectType: false });
+		let prev = hashed.get(h);
+		if (prev === undefined) {
+			hashed.set(h, [[period.period_name], period]);
+		} else {
+			prev[0].push(period.period_name);
+		}
+	}
+	let toRender = Array.from(hashed.values()).map(v => {
+		// Build title string, using ' e ' for the last element, unless it already has it,
+		// as is the case with Domingos e Feriados
+		let [titles, period] = v;
+		let str = '';
+		if (titles.length == 1) str = titles[0];
+		else {
+			for (let i = 0; i < titles.length; i++) {
+				let t = titles[i];
+				if (i == titles.length - 1 && i > 0) str += ' e ' + t;
+				else if (i > 0) str += ', ' + t;
+				else str += t;
+			}
+		}
+		const newPeriod = { ...period, period_name: str };
+		return newPeriod as TimetablePeriod;
+	}).sort((a, b) => {
+		// Sort the names so that we always get strings starting with Dias Úteis first, and Domingos last
+		if (a.period_name.startsWith('Período Escolar')) return -1;
+		if (b.period_name.startsWith('Período Escolar')) return 1;
+		if (a.period_name.startsWith('Período de Verão')) return 1;
+		if (b.period_name.startsWith('Período de Verão')) return -1;
+		return 0;
+	});
 	return (
 		<div className={className + ' flex flex-col gap-5'} style={style}>
-			{timetable.periods.map((period, i) => <PeriodTable key={i} period={period} />)}
+			{toRender.map((period, i) => <PeriodTable key={i} period={period} />)}
 			<Exceptions exceptions={timetable.exceptions}/>
 		</div>
 	);
@@ -50,7 +84,9 @@ function PeriodTable({ period }:{period:TimetablePeriod}) {
 		<div>
 			<h2 className='text-xl'>{period.period_name}</h2>
 			<div className='flex flex-col gap-2'>
-				{toRender.length > 0 ? toRender.map(([title, times], i) => <SubTable key={i} title={title} times={times}/>) : <div className='font-semibold text-[8pt]'>Não há horários de passagem neste período</div>}
+				{(toRender.length > 0 ?
+					toRender.map(([title, times], i) => <SubTable key={i} title={title} times={times}/>) :
+					<div className='font-semibold text-[8pt]'>Não há horários de passagem neste período</div>)}
 			</div>
 		</div>
 	);

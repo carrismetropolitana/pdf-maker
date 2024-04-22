@@ -34,8 +34,8 @@ export default async function Footer({ line_id, stop_id, user_url, facilities }:
 
 	return (
 		<div className='w-full h-24 flex p-2 justify-between'>
-			<div className='w-full flex gap-4 text-[10pt] border border-l-0 items-start p-2 border-black'>
-				{renderedIcons.map((icon, i) => <div key={i} className='flex gap-1 items-center flex-wrap'>{icon.icon}<div>{icon.description}</div></div>)}
+			<div className='w-full flex gap-2 gap-x-4 text-[10pt] border border-l-0 items-start justify-between p-2 border-black flex-wrap '>
+				{renderedIcons.map((icon, i) => <div key={i} className='flex gap-1 items-center'>{icon.icon}<div>{icon.description}</div></div>)}
 			</div>
 			<div className='w-full flex justify-end border-x-0 p-2 border-black border gap-2'>
 				<div className='h-16 w-16' dangerouslySetInnerHTML={{ __html: dataurl }}/>
