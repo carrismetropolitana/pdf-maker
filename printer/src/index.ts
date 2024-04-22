@@ -115,6 +115,7 @@ async function main() {
 			await new Promise(resolve => setTimeout(resolve, 1000 * 60 * 5));
 			return;
 		}
+		updatedAt = timetableIndex.updated_at;
 		const timeTables = timetableIndex.pairs;
 		total = timeTables.length;
 		console.log(`Generating ${total} schedules with ${PARALLEL} workers...`);
