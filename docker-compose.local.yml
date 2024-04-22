@@ -39,6 +39,8 @@ services:
       - serverdb:/data
     environment:
       - REDIS_ARGS=--save 5 1
+    ports:
+      - "6379:6379"
 
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
@@ -58,6 +60,8 @@ services:
     depends_on:
       - serverdb
       - networkdb
+    ports:
+      - "5050:5050"
 
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
@@ -88,7 +92,8 @@ services:
       - NETWORKDB_HOST=networkdb
       - NETWORKDB_USER=networkdbuser
       - NETWORKDB_PASSWORD=networkdbpassword
-      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
+      # - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
+      - GTFS_URL=https://storage.carrismetropolitana.pt/static/pdfs/gtfs-a1.zip
     depends_on:
       - serverdb
       - networkdb
@@ -111,6 +116,7 @@ services:
       - API_URL=http://api:5050
       - RENDER_URL=http://pdf-renderer:3000/schedule
       - PARALLEL=2
+      - TABS=8
     depends_on:
       - pdf-renderer
 
@@ -127,3 +133,5 @@ services:
       - API_URL=http://api:5050
     depends_on:
       - api
+    ports:
+      - "3005:3000"

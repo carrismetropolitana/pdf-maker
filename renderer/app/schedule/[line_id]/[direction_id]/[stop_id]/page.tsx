@@ -6,7 +6,7 @@ import ScheduleInfo from './ScheduleInfo';
 import Footer from './Footer';
 
 const API_URL = process.env.API_URL || 'http://localhost:5050';
-const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt';
+const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt/horarios';
 
 export default async function Page({ params }:{params:{line_id:string, stop_id:string, direction_id:string}}) {
 	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.direction_id}/${params.stop_id}`);
@@ -171,7 +171,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 					<Schedule className='justify-self-end' timetable={timetable} />
 				</div>
 			</div>
-			<div className='fixed bottom-0 w-full'><Footer line_id={params.line_id} stop_id={params.stop_id} user_url={QR_URL} facilities={Array.from(facilitySet)}/></div>
+			<div className='fixed bottom-0 w-full'><Footer line_id={params.line_id} direction_id={params.direction_id} stop_id={params.stop_id} user_url={QR_URL} facilities={Array.from(facilitySet)}/></div>
 		</div>
 	);
 }

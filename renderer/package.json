@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build-serve": "next build && cp .next/static .next/standalone/.next/static -r && node .next/standalone/server.js",
     "start": "next start",
     "lint": "next lint"
   },

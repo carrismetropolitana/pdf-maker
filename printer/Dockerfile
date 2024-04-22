@@ -70,4 +70,4 @@ RUN npm run build
 ENTRYPOINT ["dumb-init", "--"]
 
 
-CMD ["node", "build/index.js"]
+CMD ["bash", "./start-all.sh"]

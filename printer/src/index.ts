@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import Puppeteer, { Page } from 'puppeteer';
 import process from 'process';
-type StopId = string;
-type LineId = string;
 
 const API_URL = process.env.API_URL || 'http://localhost:5050';
 const RENDER_URL = process.env.RENDER_URL || 'http://localhost:3000/schedule';
+const PROCESSES_NUMBER = parseInt(process.env.PROCESSES) || 1;
+const PROCESS_NUMBER = parseInt(process.env.PROCESS_NUMBER) || 1;
 const PARALLEL = parseInt(process.env.TABS) || 12;
 const PRINT_INTERVAL = 100;
 console.log(`API_URL: ${API_URL}`);
@@ -36,7 +36,14 @@ async function fetchTimetables():Promise<{updated_at:string, pairs:string[]}> {
 	console.log('Fetching timetables...');
 	let response = await fetch(`${API_URL}/timetables`);
 	console.log('Timetables fetched successfully');
-	return response.json();
+	let r:{updated_at:string, pairs:string[]} = await response.json();
+	// split the timetables.pairs into PROCESSES_NUMBER parts and return the one corresponding to PROCESS_NUMBER
+	const pairs = r.pairs;
+	const chunkSize = Math.ceil(pairs.length / PROCESSES_NUMBER);
+	const start = (PROCESS_NUMBER - 1) * chunkSize;
+	const end = start + chunkSize;
+	r.pairs = pairs.slice(start, end);
+	return r;
 }
 
 let prevStart = process.hrtime();
@@ -119,7 +126,6 @@ async function main() {
 		const timeTables = timetableIndex.pairs;
 		total = timeTables.length;
 		console.log(`Generating ${total} schedules with ${PARALLEL} workers...`);
-
 		await parallelGen(PARALLEL, timeTables);
 	}
 }
