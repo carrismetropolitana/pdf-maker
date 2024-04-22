@@ -21,6 +21,7 @@ kill_processes() {
 
 # Call the function to kill all child processes when this script receives a SIGINT
 trap kill_processes SIGINT
+trap kill_processes INT
 
 # Wait for all child processes to complete
 wait
