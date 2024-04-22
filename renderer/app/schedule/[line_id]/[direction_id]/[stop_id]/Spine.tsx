@@ -33,13 +33,19 @@ export default function Spine(
 				<div className='absolute top-[16pt]'>
 
 					<div className='flex items-center justify-end'>
-						<TablerClock className='w-full h-5 -mb-1 -mr-px'/>
+						<TablerClock className='w-full h-5 -mb-1 -mr-px hidden'/>
 					</div>
-					<div className='text-[7pt] text-center'>Min.</div>
+					<div className='text-[7pt] text-center hidden'>Min.</div>
 				</div>
 			</div>
-			{delays.map((delay, i) => delay != null ?
+			{/* {delays.map((delay, i) => delay != null ?
 				<div key={i} className={'w-full self-center col-start-1 h-full border-y-black -mt-[0.5pt] flex items-center' + (i != 0 ? ' border-t-[0.25pt]' : '') + (i == delays.length - 1 ? ' border-b-[0.25pt]' : '') } style={{ gridRowStart: delay.startAt + 2, gridRowEnd: delay.startAt + delay.span + 2 }}>{
+					<div className='text-xs text-center w-full text-neutral-700'>
+						{delay.delay}
+					</div>
+				}</div> : null)} */}
+			{delays.map((delay, i) => delay != null ?
+				<div key={i} className={'w-full self-center col-start-1 h-full border-y-black -mt-[0.5pt] hidden items-center' + (i != 0 ? ' border-t-[0.25pt]' : '') + (i == delays.length - 1 ? ' border-b-[0.25pt]' : '') } style={{ gridRowStart: delay.startAt + 2, gridRowEnd: delay.startAt + delay.span + 2 }}>{
 					<div className='text-xs text-center w-full text-neutral-700'>
 						{delay.delay}
 					</div>
@@ -122,7 +128,7 @@ function StopLabel({ stop, isBold }: {stop:Stop, isBold:boolean}) {
 	return <div className='flex flex-col'>
 		<div className={'flex justify-start items-center leading-3 max-w-[68mm] ' + (isBold ? 'font-medium text-[10pt]' : 'font-normal text-[8pt]')}>
 			<div className='overflow-ellipsis whitespace-nowrap overflow-x-hidden [&::-webkit-scrollbar]:hidden'>{stop.name}</div>
-			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6' />)}
+			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6 shrink-0' />)}
 		</div>
 		<div className='text-[7pt] font-light leading-none'>
 			{stop.locality && stop.locality + ', '}{stop.municipality}
