@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "tsc && node build/index.js"
+    "start": "tsc && node build/index.js",
+    "start-all": "tsc && bash ./start-all.sh"
   }
 }
