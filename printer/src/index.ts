@@ -8,6 +8,7 @@ const PROCESSES_NUMBER = parseInt(process.env.PROCESSES) || 1;
 const PROCESS_NUMBER = parseInt(process.env.PROCESS_NUMBER) || 1;
 const PARALLEL = parseInt(process.env.TABS) || 12;
 const PRINT_INTERVAL = 100;
+const REFRESH_AFTER = 500;
 console.log(`API_URL: ${API_URL}`);
 console.log(`RENDER_URL: ${RENDER_URL}`);
 console.log(`PARALLEL: ${PARALLEL}`);
@@ -84,12 +85,13 @@ async function processSegment(paths: string[], page: Page) {
 
 async function parallelGen(PARALLEL: number, timetablePaths: string[]) {
 	let browserOpenStart = process.hrtime();
-	const browser = await Puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox']	});
-	const pages = await Promise.all(Array.from({ length: PARALLEL }, () => browser.newPage()));
+	const browser = await Puppeteer.launch({ headless: true, devtools: false, args: ['--no-sandbox', '--disable-setuid-sandbox', '--no-zygote', '--single-process'] });
+	let pages = await Promise.all(Array.from({ length: PARALLEL }, () => browser.newPage()));
 	let browserOpenEnd = process.hrtime(browserOpenStart);
 	browserOpenTime += browserOpenEnd[0] + browserOpenEnd[1] / 1e9;
 
 	for (let page of pages) {
+		await page.setCacheEnabled(false);
 		await page.setJavaScriptEnabled(false);
 	}
 	start = process.hrtime();
@@ -98,8 +100,28 @@ async function parallelGen(PARALLEL: number, timetablePaths: string[]) {
 	for (let i = 0; i < PARALLEL; i++) {
 		segments.push(timetablePaths.slice(i * segmentSize, (i + 1) * segmentSize));
 	}
+	let processedCount = 0;
+	const totalPaths = timetablePaths.length;
+	while (processedCount < totalPaths) {
+		const currentBatch = timetablePaths.slice(processedCount, processedCount + REFRESH_AFTER);
+		const segments = [];
+		const segmentSize = Math.ceil(currentBatch.length / PARALLEL);
 
-	await Promise.all(pages.map((page, index) => processSegment(segments[index], page)));
+		for (let i = 0; i < PARALLEL; i++) {
+			segments.push(currentBatch.slice(i * segmentSize, (i + 1) * segmentSize));
+		}
+
+		await Promise.all(pages.map((page, index) => processSegment(segments[index], page)));
+
+		// Close old pages and create new ones if there are more timetables to process
+		processedCount += currentBatch.length;
+		if (processedCount < totalPaths) {
+			await Promise.all(pages.map(page => page.close()));
+			pages = await Promise.all(
+				Array.from({ length: PARALLEL }, () => browser.newPage()),
+			);
+		}
+	}
 
 	const [seconds, nanoseconds] = process.hrtime(start);
 	const totalTimeInSeconds = seconds + nanoseconds / 1e9;
