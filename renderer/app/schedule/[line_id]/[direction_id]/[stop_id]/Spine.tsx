@@ -75,22 +75,27 @@ export default function Spine(
 					<StopLabel stop={firstStop} isBold={true}/>
 				</div>
 			</div>
-			{renderedStops.map((stop, i) => <div key={i} className='gap-1 h-8 col-start-3 relative' style={{ gridRowStart: i + 2 }}>
+			{renderedStops.map((stop, i) => <div key={i} className='gap-1 h-9 col-start-3 relative' style={{ gridRowStart: i + 2 }}>
 				<div className='absolute top-1/2 flex items-center gap-2 h-8'>
 					{isStop(stop) ?
 						<Fragment>
 							{stop.stop.id === currentStopId ?
 								<div className='relative -mr-2'>
-									<div className='absolute top-0 bottom-0 flex items-center right-0'><div className='h-[4mm] w-[4mm] rounded-full flex items-center justify-center bg-black'>
-										<div className='h-[2mm] w-[2mm] rounded-full bg-white'></div>
-									</div></div>
+									<div className='absolute top-0 bottom-0 flex items-center right-0'>
+										<div className='
+										border-y-[6px] border-y-transparent
+										border-l-[10px] border-l-black
+										'></div>
+										<div className='h-[4mm] w-[4mm] rounded-full flex items-center justify-center bg-black'>
+											<div className='h-[2mm] w-[2mm] rounded-full bg-white'></div>
+										</div></div>
 								</div> : ''}
 							<div className='bg-black h-px w-[2mm]' >
 							</div>
 							<StopLabel stop={stop.stop} isBold={stop.stop.id === currentStopId}/>
 						</Fragment> :
 						<Fragment>
-							<div className='h-16 flex flex-col justify-evenly'>
+							<div className='h-[4.5rem] flex flex-col justify-evenly'>
 								{[...Array(stop.count)].map((_, i) => <div key={i} className='bg-neutral-400 h-[0.5pt] w-[2mm]' ></div>)}
 							</div>
 							<div className='flex items-stretch gap-1 text-[7pt] text-neutral-400'>+{stop.count} paragens em {stop.municipality}</div>
@@ -130,7 +135,7 @@ function StopLabel({ stop, isBold }: {stop:Stop, isBold:boolean}) {
 			<div className='overflow-ellipsis whitespace-nowrap overflow-x-hidden [&::-webkit-scrollbar]:hidden'>{stop.name}</div>
 			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6 shrink-0' />)}
 		</div>
-		<div className='text-[7pt] font-light leading-none'>
+		<div className='text-[7pt] font-light leading-none pt-[0.8mm]'>
 			{stop.locality && stop.locality + ', '}{stop.municipality}
 		</div>
 	</div>;

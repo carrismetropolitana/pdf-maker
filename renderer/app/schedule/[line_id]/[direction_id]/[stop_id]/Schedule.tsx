@@ -28,8 +28,8 @@ export default function Schedule({ className, style, timetable }: {className?: s
 				else str += t;
 			}
 		}
-		const newPeriod = { ...period, period_name: str };
-		return newPeriod as TimetablePeriod;
+		const newPeriod = { ...period, period_name: str, period_names: titles };
+		return newPeriod as TimetablePeriod & { period_names: string[] };
 	}).sort((a, b) => {
 		// Sort the names so that we always get strings starting with Dias Úteis first, and Domingos last
 		if (a.period_name.startsWith('Período Escolar')) return -1;
@@ -45,13 +45,12 @@ export default function Schedule({ className, style, timetable }: {className?: s
 		</div>
 	);
 }
-function PeriodTable({ period }:{period:TimetablePeriod}) {
+function PeriodTable({ period }:{period:TimetablePeriod & { period_names: string[] }}) {
 	// Merge timetables which are the same, and their names
 	let possibilities = [['weekdays', 'Dias Úteis'], ['saturdays', 'Sábados'], ['sundays_holidays', 'Domingos e Feriados']] as const;
 	let hashed = new Map<string, [string[], TimetableEntry[]]>;
 	for (let p of possibilities) {
 		let times = period[p[0]];
-		if (times.length == 0) continue;
 		let h = hash(times, { respectType: false });
 		let prev = hashed.get(h);
 		if (prev === undefined) {
@@ -82,7 +81,13 @@ function PeriodTable({ period }:{period:TimetablePeriod}) {
 	});
 	return (
 		<div>
-			<h2 className='text-xl'>{period.period_name}</h2>
+			<div className='flex flex-wrap gap-1'>
+				{period.period_names.map((name, i) => <>
+					{i != 0 && <div className='text-slate-400'>|</div>}
+					<div key={i} className='text-base font-semibold'>{name}</div>
+				</>)}
+			</div>
+			{/* <h2 className='text-base font-semibold'>{period.period_names.join('|')}</h2> */}
 			<div className='flex flex-col gap-2'>
 				{(toRender.length > 0 ?
 					toRender.map(([title, times], i) => <SubTable key={i} title={title} times={times}/>) :
@@ -93,12 +98,12 @@ function PeriodTable({ period }:{period:TimetablePeriod}) {
 }
 
 function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
-	let timesByHour:{minute:number, exception:string}[][] = Array.from<number[], {minute:number, exception:string}[]>({ length: 25 }, () => []);
+	let timesByHour = Array.from<number[], {minute:number, exceptions:string[]}[]>({ length: 25 }, () => []);
 	for (let entry of times) {
 		const [hour, minute, _] = entry.time.split(':').map(s => parseInt(s, 10));
-		const exception = entry.exceptions.map(e => e.id).join(',');
+		const exception = entry.exceptions.map(e => e.id);
 		let span = timesByHour[hour];
-		if (span && !span.find(elem => elem.minute == minute)) span.push({ minute, exception });
+		if (span && !span.find(elem => elem.minute == minute)) span.push({ minute, exceptions: exception });
 	}
 	// sort each span
 	for (let span of timesByHour) {
@@ -107,18 +112,23 @@ function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
 	// console.log(times);
 	return <div className=''>
 		<div className='bg-black h-px w-full'></div>
-		<h3>{title}</h3>
+		<h3 className='text-sm font-medium'>{title}</h3>
 		<div className='flex text-[3mm]'>
 			<div className='flex flex-col '>
 				<div className='bg-black text-white text-center rounded-l-full pl-2 -ml-2 font-semibold text-[8pt] h-[4mm] leading-none flex items-center'>Hora</div>
-				<div className='text-center text-[7.5pt]'>Min.</div>
+				{times.length != 0 && <div className='text-center text-[7.5pt]'>Min.</div>}
 			</div>
 			{timesByHour.map((minutes, hour) => <div key={hour} className='flex flex-col items-stretch w-4 text-[7mm]'>
 				<div className={'bg-black text-white text-center font-semibold text-[8pt] h-[4mm] leading-none flex items-center justify-center relative ' + (hour == timesByHour.length - 1 ? ' pr-1 -mr-1 rounded-r-full' : '')}>{hour}</div>
-				{minutes.map((entry, i) => <div key={i} className={'text-[7.5pt] text-center relative self-center'}>{entry.minute.toString().padStart(2, '0')}{entry.exception ? <div className='absolute top-[0pt] left-full font-semibold text-[4pt]'>{entry.exception}</div> : null}</div>)}
+				{minutes.map((entry, i) => <div key={i} className={'text-[7.5pt] text-center relative self-center'}>
+					{entry.minute.toString().padStart(2, '0')}
+					{entry.exceptions && <div className='absolute top-[1pt] left-full font-semibold text-[4pt] flex flex-col leading-none'>
+						{entry.exceptions.map((exception, i) => <div key={i} className='-mb-[0.2mm]'>{exception}</div>)}
+					</div>}</div>)}
 			</div>)
 			}
 		</div>
+		{times.length == 0 && <div className='text-[8pt]'> Não há horários de passagem</div>}
 	</div>;
 }
 
