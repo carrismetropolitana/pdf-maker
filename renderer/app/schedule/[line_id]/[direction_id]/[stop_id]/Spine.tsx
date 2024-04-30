@@ -68,8 +68,8 @@ export default function Spine(
 				</div>
 			</div>
 
-			<div className='gap-1 h-8 col-start-3 self-center relative top-px' style={{ gridRowStart: 1 }}>
-				<div className='flex items-center gap-2 h-8 absolute top-1/2'>
+			<div className='gap-1 h-9 col-start-3 self-center relative top-px' style={{ gridRowStart: 1 }}>
+				<div className='flex items-center gap-2 h-9 absolute top-1/2'>
 					<div className='bg-black h-px mt-px w-2' >
 					</div>
 					<StopLabel stop={firstStop} isBold={true}/>
@@ -118,8 +118,8 @@ export default function Spine(
 					</svg>
 				</div>
 			</div>
-			<div className='gap-2 h-8 col-start-3 relative ' style={{ gridRowStart: renderedStops.length + 2 }}>
-				<div className='absolute top-1/2 flex items-center gap-1 h-8'>
+			<div className='gap-2 h-9 col-start-3 relative ' style={{ gridRowStart: renderedStops.length + 2 }}>
+				<div className='absolute top-1/2 flex items-center gap-1 h-9'>
 					<div className='bg-black h-[1px] w-2' >
 					</div>
 					<StopLabel stop={lastStop} isBold={true}/>

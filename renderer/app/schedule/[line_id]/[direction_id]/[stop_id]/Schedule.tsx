@@ -83,8 +83,8 @@ function PeriodTable({ period }:{period:TimetablePeriod & { period_names: string
 		<div>
 			<div className='flex flex-wrap gap-1'>
 				{period.period_names.map((name, i) => <>
-					{i != 0 && <div className='text-slate-400'>|</div>}
-					<div key={i} className='text-base font-semibold'>{name}</div>
+					{i != 0 && <div className='text-slate-400 leading-none'>|</div>}
+					<div key={i} className='text-base font-semibold leading-none'>{name}</div>
 				</>)}
 			</div>
 			{/* <h2 className='text-base font-semibold'>{period.period_names.join('|')}</h2> */}
@@ -111,8 +111,8 @@ function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
 	}
 	// console.log(times);
 	return <div className=''>
-		<div className='bg-black h-px w-full'></div>
-		<h3 className='text-sm font-medium'>{title}</h3>
+		<div className='bg-black h-px w-full my-2'></div>
+		<h3 className='text-sm font-medium mb-0.5'>{title}</h3>
 		<div className='flex text-[3mm]'>
 			<div className='flex flex-col '>
 				<div className='bg-black text-white text-center rounded-l-full pl-2 -ml-2 font-semibold text-[8pt] h-[4mm] leading-none flex items-center'>Hora</div>

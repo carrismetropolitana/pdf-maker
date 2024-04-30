@@ -1,4 +1,5 @@
 import { Facility, Pattern, Timetable } from './apitypes';
+import QRCode from 'qrcode';
 import Header from './Header';
 import Spine from './Spine';
 import Schedule from './Schedule';
@@ -9,16 +10,15 @@ const API_URL = process.env.API_URL || 'http://localhost:5050';
 const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt/horarios';
 
 export default async function Page({ params }:{params:{line_id:string, stop_id:string, direction_id:string}}) {
-	console.log('API_URL:', API_URL, 'QR_URL:', QR_URL);
 	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.direction_id}/${params.stop_id}`);
 	const timetable: Timetable = await timetableRes.json();
 	// console.log(JSON.stringify(timetable, null, 2));
 	const patternURL = `${API_URL}/patterns/${timetable.patternForDisplay}`;
 	const patternRes = fetch(patternURL).then(patternRes => patternRes.json());
-	const secondaryPatterns = Promise.all(timetable.secondaryPatterns.map(patternId => fetch(`${API_URL}/patterns/${patternId}`).then(patternRes => patternRes.json())));
+	const secondaryPatternsPromise = Promise.all(timetable.secondaryPatterns.map(patternId => fetch(`${API_URL}/patterns/${patternId}`).then(patternRes => patternRes.json())));
+	// console.log(patternURL, timetable.secondaryPatterns.map(patternId => `${API_URL}/patterns/${patternId}`));
 
-	const [pattern, secondaryPatternsData]:[	Pattern, Pattern[] ] = await Promise.all([patternRes, secondaryPatterns]);
-
+	const [pattern, secondaryPatterns]:[	Pattern, Pattern[] ] = await Promise.all([patternRes, secondaryPatternsPromise]);
 	if (!pattern.path || !pattern.path[1] || !pattern.path[1].stop) {
 		console.error(patternURL, 'pattern.path[1].stop is undefined, pattern:', pattern);
 		return;
@@ -165,12 +165,14 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		}
 	}
 
+	let dataurl = await QRCode.toString(`${QR_URL}/${params.line_id}/${params.direction_id}/${params.stop_id}`, { errorCorrectionLevel: 'H', margin: 0, type: 'svg', color: { dark: '#000000', light: '#ffffff' } });
+
 	return (
 		<div>
-			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} firstStop={pattern.path[0].stop.name} lastStop={pattern.path[pattern.path.length - 1].stop.name} />
+			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} headsigns={[pattern.headsign, ...secondaryPatterns.map(p => p.headsign)]} dataurl={dataurl} />
 			<div className='flex flex-row w-full p-4'>
 				<Spine className='grow -translate-y-3.5' color={pattern.color} firstStop={firstStop} lastStop={lastStop} delays={delays} renderedStops={renderedStops} currentStopId={params.stop_id} />
-				<div className='text-neutral-800 w-[430px] flex flex-col gap-2'>
+				<div className='text-neutral-800 w-[430px] flex flex-col gap-4'>
 					<ScheduleInfo name={stopInfo.name } stopId={params.stop_id} startDate={today}/>
 					<Schedule className='justify-self-end' timetable={timetable} />
 				</div>

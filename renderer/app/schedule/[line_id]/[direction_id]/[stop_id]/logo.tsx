@@ -1,7 +1,7 @@
 import React from 'react';
 export default function Logo({ className, style }: { className?: string, style?: React.CSSProperties}) {
 	return (
-		<svg className={className + ' fill-white'} style={style}
+		<svg className={className + ' fill-black'} style={style}
 			viewBox='0 0 365.2 130.2'>
 			<g>
 				<path d='M155,64.6l-1.5,3.7c-0.2,0.5-0.6,0.6-1.1,0.5c-0.5-0.1-1.1-0.3-2-0.3c-3.1,0-5,2.3-5,5.2v12.9c0,0.4-0.3,0.7-0.7,0.7h-5
