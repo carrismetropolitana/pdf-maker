@@ -76,7 +76,7 @@ export default function Spine(
 				</div>
 			</div>
 			{renderedStops.map((stop, i) => <div key={i} className='gap-1 h-9 col-start-3 relative' style={{ gridRowStart: i + 2 }}>
-				<div className='absolute top-1/2 flex items-center gap-2 h-8'>
+				<div className='absolute top-1/2 flex items-center gap-2 h-9'>
 					{isStop(stop) ?
 						<Fragment>
 							{stop.stop.id === currentStopId ?

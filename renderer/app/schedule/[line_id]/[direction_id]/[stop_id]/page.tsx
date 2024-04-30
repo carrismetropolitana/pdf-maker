@@ -169,7 +169,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		<div>
 			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} firstStop={pattern.path[0].stop.name} lastStop={pattern.path[pattern.path.length - 1].stop.name} />
 			<div className='flex flex-row w-full p-4'>
-				<Spine className='grow' color={pattern.color} firstStop={firstStop} lastStop={lastStop} delays={delays} renderedStops={renderedStops} currentStopId={params.stop_id} />
+				<Spine className='grow -translate-y-3.5' color={pattern.color} firstStop={firstStop} lastStop={lastStop} delays={delays} renderedStops={renderedStops} currentStopId={params.stop_id} />
 				<div className='text-neutral-800 w-[430px] flex flex-col gap-2'>
 					<ScheduleInfo name={stopInfo.name } stopId={params.stop_id} startDate={today}/>
 					<Schedule className='justify-self-end' timetable={timetable} />
