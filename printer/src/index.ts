@@ -1,15 +1,13 @@
 import 'dotenv/config';
-import Puppeteer, { Page } from 'puppeteer';
+import puppeteer, { Page, Browser } from 'puppeteer';
 import process from 'process';
 
-const API_URL = process.env.API_URL || 'http://localhost:5050';
+const QUEUE_URL = process.env.QUEUE_URL || 'http://localhost:5052';
 const RENDER_URL = process.env.RENDER_URL || 'http://localhost:3000/schedule';
-const PROCESSES_NUMBER = parseInt(process.env.PROCESSES) || 1;
-const PROCESS_NUMBER = parseInt(process.env.PROCESS_NUMBER) || 1;
 const PARALLEL = parseInt(process.env.TABS) || 12;
-const PRINT_INTERVAL = 100;
-const REFRESH_AFTER = 500;
-console.log(`API_URL: ${API_URL}`);
+const CACHE_SIZE = PARALLEL * 2;
+const REFRESH_AFTER = parseInt(process.env.REFRESH_AFTER) || 100;
+console.log(`QUEUE_URL: ${QUEUE_URL}`);
 console.log(`RENDER_URL: ${RENDER_URL}`);
 console.log(`PARALLEL: ${PARALLEL}`);
 
@@ -33,21 +31,6 @@ function secondsToHms(d: number) {
 	return hDisplay + mDisplay + sDisplay;
 }
 
-async function fetchTimetables():Promise<{updated_at:string, pairs:string[]}> {
-	console.log('Fetching timetables...');
-	let response = await fetch(`${API_URL}/timetables`);
-	console.log('Timetables fetched successfully');
-	let r:{updated_at:string, pairs:string[]} = await response.json();
-	// split the timetables.pairs into PROCESSES_NUMBER parts and return the one corresponding to PROCESS_NUMBER
-	const pairs = r.pairs;
-	const chunkSize = Math.ceil(pairs.length / PROCESSES_NUMBER);
-	const start = (PROCESS_NUMBER - 1) * chunkSize;
-	const end = start + chunkSize;
-	r.pairs = pairs.slice(start, end);
-	return r;
-}
-
-let prevStart = process.hrtime();
 async function saveTimetableAsPDF(page: Page, path: string) {
 	let success = false;
 	while (!success) {
@@ -64,64 +47,40 @@ async function saveTimetableAsPDF(page: Page, path: string) {
 
 			success = true;
 			count++;
-			if (count % PRINT_INTERVAL === 0) {
-				const [seconds, nanoseconds] = process.hrtime(prevStart);
-				const totalTimeInSeconds = seconds + nanoseconds / 1e9;
-				const pdfsPerSecond = PRINT_INTERVAL / totalTimeInSeconds;
-				console.log(`${count}/${total} @ ${pdfsPerSecond.toFixed(2)}/s`);
-				prevStart = process.hrtime();
-			}
 		} catch (e) {
 			console.error(`Error saving timetable as PDF: ${e.message}`);
 		}
 	}
 }
 
-async function processSegment(paths: string[], page: Page) {
-	for (let path of paths) {
+async function processSegment(paths: AsyncGenerator<string>, browser: Browser) {
+	let i = 0;
+	let page = await browser.newPage();
+	await page.setJavaScriptEnabled(false);
+
+	for await (let path of paths) {
+		i++;
 		await saveTimetableAsPDF(page, path);
+		if (i % REFRESH_AFTER === 0) {
+			await page.close();
+			page = await browser.newPage();
+			await page.setJavaScriptEnabled(false);
+		}
 	}
 }
 
-async function parallelGen(PARALLEL: number, timetablePaths: string[]) {
-	let browserOpenStart = process.hrtime();
-	const browser = await Puppeteer.launch({ headless: true, devtools: false, args: ['--no-sandbox', '--disable-setuid-sandbox', '--no-zygote', '--single-process'] });
-	let pages = await Promise.all(Array.from({ length: PARALLEL }, () => browser.newPage()));
-	let browserOpenEnd = process.hrtime(browserOpenStart);
-	browserOpenTime += browserOpenEnd[0] + browserOpenEnd[1] / 1e9;
+async function parallelGen(PARALLEL: number, timetablePaths: AsyncGenerator<string, void, unknown>) {
+	const browser = await puppeteer.launch({ headless: true, devtools: false, args: ['--no-sandbox', '--disable-setuid-sandbox', '--no-zygote'] });
 
-	for (let page of pages) {
-		await page.setCacheEnabled(false);
-		await page.setJavaScriptEnabled(false);
-	}
 	start = process.hrtime();
-	const segments: string[][] = [];
-	const segmentSize = Math.ceil(timetablePaths.length / PARALLEL);
-	for (let i = 0; i < PARALLEL; i++) {
-		segments.push(timetablePaths.slice(i * segmentSize, (i + 1) * segmentSize));
+
+	let promises = [];
+	for (let pageN = 0; pageN < PARALLEL; pageN++) {
+		promises.push((async () => {
+			await processSegment(timetablePaths, browser);
+		})());
 	}
-	let processedCount = 0;
-	const totalPaths = timetablePaths.length;
-	while (processedCount < totalPaths) {
-		const currentBatch = timetablePaths.slice(processedCount, processedCount + REFRESH_AFTER);
-		const segments = [];
-		const segmentSize = Math.ceil(currentBatch.length / PARALLEL);
-
-		for (let i = 0; i < PARALLEL; i++) {
-			segments.push(currentBatch.slice(i * segmentSize, (i + 1) * segmentSize));
-		}
-
-		await Promise.all(pages.map((page, index) => processSegment(segments[index], page)));
-
-		// Close old pages and create new ones if there are more timetables to process
-		processedCount += currentBatch.length;
-		if (processedCount < totalPaths) {
-			await Promise.all(pages.map(page => page.close()));
-			pages = await Promise.all(
-				Array.from({ length: PARALLEL }, () => browser.newPage()),
-			);
-		}
-	}
+	await Promise.all(promises);
 
 	const [seconds, nanoseconds] = process.hrtime(start);
 	const totalTimeInSeconds = seconds + nanoseconds / 1e9;
@@ -133,23 +92,47 @@ async function parallelGen(PARALLEL: number, timetablePaths: string[]) {
 	await browser.close();
 }
 
-let updatedAt = '';
-async function main() {
-	// eslint-disable-next-line no-constant-condition
-	while (true) {
-		const timetableIndex = await fetchTimetables();
-		if (timetableIndex.updated_at === updatedAt) {
-			console.log('No new timetables found');
-			// Sleep for 5 mins
-			await new Promise(resolve => setTimeout(resolve, 1000 * 60 * 5));
-			return;
+let queue: string[] = [];
+let finished = false;
+
+// Helper function to fetch items and replenish the queue
+async function replenishQueue() {
+	while (!finished && queue.length < CACHE_SIZE) {
+		if (finished || queue.length >= CACHE_SIZE) {
+			break;
 		}
-		updatedAt = timetableIndex.updated_at;
-		const timeTables = timetableIndex.pairs;
-		total = timeTables.length;
-		console.log(`Generating ${total} schedules with ${PARALLEL} workers...`);
-		await parallelGen(PARALLEL, timeTables);
+
+		try {
+			let response = await fetch(`${QUEUE_URL}/nextitem`);
+			let maybeItem: { finished: boolean, item: string | null } = await response.json();
+
+			if (maybeItem.finished) {
+				finished = true;
+			} else if (maybeItem.item) {
+				queue.push(maybeItem.item);
+				// console.log(`Item added: ${maybeItem.item}`);
+			}
+		} catch (error) {
+			console.error('Failed to fetch item:', error);
+		}
+	}
+	// console.log(`Replenished queue with ${queue.length} items`);
+}
+
+// Asynchronous generator function to manage the queue and yield items
+async function* itemGenerator() {
+	while (!finished || queue.length > 0) {
+		// console.log(`Queue length: ${queue.length}, finished: ${finished}`);
+		if (!finished && queue.length === 0) {
+			await replenishQueue(); // Call replenishQueue without awaiting it
+			console.log('Had to wait for replenishQueue');
+		} else if (queue.length < CACHE_SIZE && !finished) {
+			replenishQueue(); // Call replenishQueue without awaiting it
+		}
+
+		const item = queue.shift(); // Remove the item from the front of the queue
+		yield item; // Yield the current item
 	}
 }
 
-main();
+parallelGen(PARALLEL, itemGenerator());

@@ -44,6 +44,8 @@ RUN npm run build
 
 FROM base AS runner
 
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 ENV NODE_ENV production

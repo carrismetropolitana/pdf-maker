@@ -20,6 +20,7 @@ FROM node:slim
 RUN apt-get update && apt-get -yq upgrade && apt-get install \
     && apt-get autoremove && apt-get autoclean
 
+
 # Install latest chrome dev package and fonts to support major charsets (Chinese, Japanese, Arabic, Hebrew, Thai and a few others)
 # Note: this installs the necessary libs to make the bundled version of Chromium that Puppeteer
 # installs, work.
@@ -70,4 +71,4 @@ RUN npm run build
 ENTRYPOINT ["dumb-init", "--"]
 
 
-CMD ["bash", "./start-all.sh"]
+CMD ["node", "./build/index.js"]

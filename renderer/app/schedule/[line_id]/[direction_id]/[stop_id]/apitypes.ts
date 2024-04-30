@@ -21,6 +21,7 @@ export type Timetable = {
     text: string;
   }[];
   patternForDisplay: string;
+  secondaryPatterns: string[];
 };
 
 export type Pattern = {

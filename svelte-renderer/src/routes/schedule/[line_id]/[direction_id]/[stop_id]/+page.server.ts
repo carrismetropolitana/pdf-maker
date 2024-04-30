@@ -6,12 +6,12 @@ import QRCode from "qrcode";
 export const load:PageServerLoad = async({params})=>{
 	const API_URL = process.env.API_URL || 'http://localhost:5050';
 	const QR_URL:string = process.env.QR_URL || 'https://qr.carrismetropolitana.pt';
-	const dataurl = QRCode.toString(`${QR_URL}/${params.line_id}/${params.stop_id}`, {
+	const dataurl = QRCode.toString(`${QR_URL}/${params.line_id}/${params.direction_id}/${params.stop_id}`, {
 		errorCorrectionLevel: "H",
 		margin: 0,
 		type: "svg",
 	});
-	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.stop_id}`);
+	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.direction_id}/${params.stop_id}`);
 	const timetable: Timetable = await timetableRes.json();
 	// console.log(JSON.stringify(timetable, null, 2));
 	const patternURL = `${API_URL}/patterns/${timetable.patternForDisplay}`;

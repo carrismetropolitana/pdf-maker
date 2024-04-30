@@ -5,10 +5,10 @@ volumes:
   serverdb:
 
 services:
-  #
+  
 
-  # # # # # # # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # #
 
   # tts-generator:
   #   image: ghcr.io/carrismetropolitana/tts-generator:production
@@ -28,6 +28,25 @@ services:
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
 
+  networkdb:
+    image: postgres:alpine
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - POSTGRES_USER=networkdbuser
+      - POSTGRES_PASSWORD=networkdbpassword
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 10s
+  # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # #
+
   serverdb:
     image: redis:alpine
     restart: unless-stopped
@@ -39,9 +58,14 @@ services:
       - serverdb:/data
     environment:
       - REDIS_ARGS=--save 5 1
-    ports:
-      - "6379:6379"
-
+    # ports:
+    #   - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL","redis-cli ping | grep -q PONG || exit 1"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 10s
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
 
@@ -58,24 +82,20 @@ services:
     # secrets:
     #   - realtimedbkey
     depends_on:
-      - serverdb
-      - networkdb
+      serverdb:
+        condition: service_healthy
+      networkdb:
+        condition: service_healthy
+
     ports:
       - "5050:5050"
+    healthcheck:
+      test: ["CMD-SHELL","wget -O - http://localhost:5050/timetables | wc -c | grep -q -E '^([0-9]{2,}|1[0-9]{2,}|200)$$' || exit 1"]
+      interval: 10s
+      timeout: 30s
+      retries: 500000
+      start_period: 10s
 
-  # # # # # # # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # # # # # # # #
-
-  networkdb:
-    image: postgres:alpine
-    restart: unless-stopped
-    logging:
-      options:
-        max-size: '1m'
-        max-file: '1'
-    environment:
-      - POSTGRES_USER=networkdbuser
-      - POSTGRES_PASSWORD=networkdbpassword
 
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
@@ -93,7 +113,7 @@ services:
       - NETWORKDB_USER=networkdbuser
       - NETWORKDB_PASSWORD=networkdbpassword
       # - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
-      - GTFS_URL=https://storage.carrismetropolitana.pt/static/pdfs/gtfs-a1.zip
+      - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/20240417_41_YEAR_02_28_03.zip
     depends_on:
       - serverdb
       - networkdb
@@ -101,24 +121,6 @@ services:
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
 
-  pdf-printer:
-    build: 
-      context: ./printer
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    logging:
-      options:
-        max-size: '1m'
-        max-file: '1'
-    volumes:
-      - ./static/pdf-test:/app/pdfs
-    environment:
-      - API_URL=http://api:5050
-      - RENDER_URL=http://pdf-renderer:3000/schedule
-      - PARALLEL=2
-      - TABS=8
-    depends_on:
-      - pdf-renderer
 
   pdf-renderer:
     build:
@@ -135,3 +137,52 @@ services:
       - api
     ports:
       - "3005:3000"
+    healthcheck:
+      test: curl -f http://localhost:3000 || exit 1
+      interval: 5s
+      timeout: 30s
+      retries: 100000
+      start_period: 5s
+
+  queue:
+    build:
+      context: ./queue-manager
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - API_URL=http://api:5050
+    healthcheck:
+      test: curl -f http://localhost:5052/ready || exit 1
+      interval: 5s
+      timeout: 9000s
+      retries: 100000
+      start_period: 30s
+    ports:
+      - "5052:5052"
+    depends_on:
+      api:
+        condition: service_healthy
+    
+  pdf-printer:
+    build: 
+      context: ./printer
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    volumes:
+      - ./static/pdf-test:/app/pdfs
+    environment:
+      - RENDER_URL=http://pdf-renderer:3000/schedule
+      - QUEUE_URL=http://queue:5052
+    depends_on:
+      pdf-renderer:
+        condition: service_healthy
+      queue:
+        condition: service_healthy

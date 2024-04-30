@@ -9,12 +9,16 @@ const API_URL = process.env.API_URL || 'http://localhost:5050';
 const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt/horarios';
 
 export default async function Page({ params }:{params:{line_id:string, stop_id:string, direction_id:string}}) {
+	console.log('API_URL:', API_URL, 'QR_URL:', QR_URL);
 	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.direction_id}/${params.stop_id}`);
 	const timetable: Timetable = await timetableRes.json();
 	// console.log(JSON.stringify(timetable, null, 2));
 	const patternURL = `${API_URL}/patterns/${timetable.patternForDisplay}`;
-	const patternRes = await fetch(patternURL);
-	const pattern: Pattern = await patternRes.json();
+	const patternRes = fetch(patternURL).then(patternRes => patternRes.json());
+	const secondaryPatterns = Promise.all(timetable.secondaryPatterns.map(patternId => fetch(`${API_URL}/patterns/${patternId}`).then(patternRes => patternRes.json())));
+
+	const [pattern, secondaryPatternsData]:[	Pattern, Pattern[] ] = await Promise.all([patternRes, secondaryPatterns]);
+
 	if (!pattern.path || !pattern.path[1] || !pattern.path[1].stop) {
 		console.error(patternURL, 'pattern.path[1].stop is undefined, pattern:', pattern);
 		return;
