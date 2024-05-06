@@ -73,9 +73,7 @@ services:
     image: ghcr.io/carrismetropolitana/api-server:beta
     restart: unless-stopped
     logging:
-      options:
-        max-size: '1m'
-        max-file: '1'
+      driver: none
     environment:
       - SERVERDB_HOST=serverdb
       # - MONGODB_URI=mongodb://mongodbuser:mongodbpassword@localhost:27017/production?authSource=admin
@@ -87,22 +85,13 @@ services:
       networkdb:
         condition: service_healthy
 
-    ports:
-      - "5050:5050"
-    healthcheck:
-      test: ["CMD-SHELL","wget -O - http://localhost:5050/timetables | wc -c | grep -q -E '^([0-9]{2,}|1[0-9]{2,}|200)$$' || exit 1"]
-      interval: 10s
-      timeout: 30s
-      retries: 500000
-      start_period: 10s
-
 
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
 
   parse-network:
     image: ghcr.io/carrismetropolitana/api-parse-network:beta
-    restart: unless-stopped
+    restart: "no"
     logging:
       options:
         max-size: '1m'
@@ -112,8 +101,9 @@ services:
       - NETWORKDB_HOST=networkdb
       - NETWORKDB_USER=networkdbuser
       - NETWORKDB_PASSWORD=networkdbpassword
-      # - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
-      - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/20240417_41_YEAR_02_28_03.zip
+      - SINGLE_RUN=true
+      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
+      # - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/GTFS_a4_ref_20240502.zip
     depends_on:
       - serverdb
       - networkdb
@@ -155,23 +145,17 @@ services:
         max-file: '1'
     environment:
       - API_URL=http://api:5050
-    healthcheck:
-      test: curl -f http://localhost:5052/ready || exit 1
-      interval: 5s
-      timeout: 9000s
-      retries: 100000
-      start_period: 30s
-    ports:
-      - "5052:5052"
+    # ports:
+    #   - "5052:5052"
     depends_on:
-      api:
-        condition: service_healthy
+      parse-network:
+        condition: service_completed_successfully
     
   pdf-printer:
     build: 
       context: ./printer
       dockerfile: Dockerfile
-    restart: unless-stopped
+    restart: "no"
     logging:
       options:
         max-size: '1m'
@@ -182,7 +166,7 @@ services:
       - RENDER_URL=http://pdf-renderer:3000/schedule
       - QUEUE_URL=http://queue:5052
     depends_on:
-      pdf-renderer:
-        condition: service_healthy
+      parse-network:
+        condition: service_completed_successfully
       queue:
-        condition: service_healthy
+        condition: service_started

@@ -53,16 +53,6 @@ RUN npm --omit=dev install
 ARG CACHEBUST=1
 RUN npm install puppeteer
 
-# Add pptr user.
-RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
-    && mkdir -p /home/pptruser/Downloads \
-    && chown -R pptruser:pptruser /home/pptruser \
-    && chown -R pptruser:pptruser /app \
-    && mkdir -p /output/jobsdata/pdfs \
-    && chown -R pptruser:pptruser /output/jobsdata/pdfs/ \
-    && chmod -R 777 /output/jobsdata/pdfs/
-
-
 # Run user as non privileged.
 # USER pptruser
 

@@ -27,7 +27,7 @@ async function main() {
 		if (i % LOG_EVERY === 0) {
 			let currentTime = process.hrtime.bigint();
 			// log how many items per second we are processing since last log
-			console.log(`${String(i).padStart(String(queue.length).length)}/${queue.length} @ ${(LOG_EVERY / (Number(currentTime - startTime) / 1e9)).toFixed(2)} pdfs/s`);
+			console.log(`${String(i).padStart(String(queue.length + i).length)}/${queue.length + i} @ ${(LOG_EVERY / (Number(currentTime - startTime) / 1e9)).toFixed(2)} pdfs/s`);
 			startTime = currentTime;
 		}
 		i++;
