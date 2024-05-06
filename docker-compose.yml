@@ -1,0 +1,147 @@
+version: '3.9'
+
+volumes:
+  certbotdata:
+  serverdb:
+
+services:
+  
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  networkdb:
+    image: postgres:alpine
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - POSTGRES_USER=networkdbuser
+      - POSTGRES_PASSWORD=networkdbpassword
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 10s
+  # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # #
+
+  serverdb:
+    image: redis:alpine
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    volumes:
+      - serverdb:/data
+    environment:
+      - REDIS_ARGS=--save 5 1
+    # ports:
+    #   - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL","redis-cli ping | grep -q PONG || exit 1"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 10s
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  api:
+    image: ghcr.io/carrismetropolitana/api-server:beta
+    restart: unless-stopped
+    logging:
+      driver: none
+    environment:
+      - SERVERDB_HOST=serverdb
+      # - MONGODB_URI=mongodb://mongodbuser:mongodbpassword@localhost:27017/production?authSource=admin
+    # secrets:
+    #   - realtimedbkey
+    depends_on:
+      serverdb:
+        condition: service_healthy
+      networkdb:
+        condition: service_healthy
+
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  parse-network:
+    image: ghcr.io/carrismetropolitana/api-parse-network:beta
+    restart: "no"
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - SERVERDB_HOST=serverdb
+      - NETWORKDB_HOST=networkdb
+      - NETWORKDB_USER=networkdbuser
+      - NETWORKDB_PASSWORD=networkdbpassword
+      - SINGLE_RUN=true
+      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
+      # - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/GTFS_a4_ref_20240502.zip
+    depends_on:
+      - serverdb
+      - networkdb
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+
+  pdf-renderer:
+    image: ghcr.io/carrismetropolitana/pdf-maker-renderer:production
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - API_URL=http://api:5050
+    depends_on:
+      - api
+    ports:
+      - "3005:3000"
+    healthcheck:
+      test: curl -f http://localhost:3000 || exit 1
+      interval: 5s
+      timeout: 30s
+      retries: 100000
+      start_period: 5s
+
+  queue:
+    image: ghcr.io/carrismetropolitana/pdf-maker-queue:production
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    environment:
+      - API_URL=http://api:5050
+    # ports:
+    #   - "5052:5052"
+    depends_on:
+      parse-network:
+        condition: service_completed_successfully
+    
+  pdf-printer:
+    image: ghcr.io/carrismetropolitana/pdf-maker-printer:production
+    restart: "no"
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    volumes:
+      - ./static/pdf-test:/app/pdfs
+    environment:
+      - RENDER_URL=http://pdf-renderer:3000/schedule
+      - QUEUE_URL=http://queue:5052
+    depends_on:
+      parse-network:
+        condition: service_completed_successfully
+      queue:
+        condition: service_started
