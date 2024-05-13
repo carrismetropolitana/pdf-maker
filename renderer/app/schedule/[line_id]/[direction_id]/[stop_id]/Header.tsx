@@ -6,6 +6,9 @@ export default function Header({ backgroundColor, color, lineId, headsigns, data
 		'#0C807E': 'M',
 		'#BB3E96': 'I',
 	};
+	// TODO: remove duplicates from GTFS
+	headsigns = Array.from(new Set(headsigns));
+
 	let lineType = lineTypes[backgroundColor] || '?';
 	let fontSizes:Record<number, number> = {
 		1: 17,
