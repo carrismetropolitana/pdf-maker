@@ -30,10 +30,10 @@ async function main() {
 			console.log(`${String(i).padStart(String(queue.length + i).length)}/${queue.length + i} @ ${(LOG_EVERY / (Number(currentTime - startTime) / 1e9)).toFixed(2)} pdfs/s`);
 			startTime = currentTime;
 		}
-		i++;
 		if (queue.length === 0) {
 			return { finished: true, item: null };
 		}
+		i++;
 		return { finished: false, item: queue.shift() };
 	});
 	fastify.get('/forcerefresh', async (request, reply) => {
