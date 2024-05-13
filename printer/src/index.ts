@@ -93,21 +93,16 @@ async function parallelGen(PARALLEL: number, timetablePaths: AsyncGenerator<stri
 }
 
 let queue: string[] = [];
-let finished = false;
 
 // Helper function to fetch items and replenish the queue
 async function replenishQueue() {
-	while (!finished && queue.length < CACHE_SIZE) {
-		if (finished || queue.length >= CACHE_SIZE) {
-			break;
-		}
-
+	while (queue.length < CACHE_SIZE) {
 		try {
 			let response = await fetch(`${QUEUE_URL}/nextitem`);
 			let maybeItem: { finished: boolean, item: string | null } = await response.json();
 
 			if (maybeItem.finished) {
-				finished = true;
+				await new Promise(resolve => setTimeout(resolve, 5000));
 			} else if (maybeItem.item) {
 				queue.push(maybeItem.item);
 				// console.log(`Item added: ${maybeItem.item}`);
@@ -121,12 +116,12 @@ async function replenishQueue() {
 
 // Asynchronous generator function to manage the queue and yield items
 async function* itemGenerator() {
-	while (!finished || queue.length > 0) {
+	while (true) {
 		// console.log(`Queue length: ${queue.length}, finished: ${finished}`);
-		if (!finished && queue.length === 0) {
+		if (queue.length === 0) {
 			await replenishQueue(); // Call replenishQueue without awaiting it
 			console.log('Had to wait for replenishQueue');
-		} else if (queue.length < CACHE_SIZE && !finished) {
+		} else if (queue.length < CACHE_SIZE) {
 			replenishQueue(); // Call replenishQueue without awaiting it
 		}
 

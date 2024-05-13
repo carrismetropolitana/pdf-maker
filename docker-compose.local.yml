@@ -1,5 +1,3 @@
-version: '3.9'
-
 volumes:
   certbotdata:
   serverdb:
@@ -91,7 +89,7 @@ services:
 
   parse-network:
     image: ghcr.io/carrismetropolitana/api-parse-network:beta
-    restart: "no"
+    restart: unless-stopped
     logging:
       options:
         max-size: '1m'
@@ -101,9 +99,9 @@ services:
       - NETWORKDB_HOST=networkdb
       - NETWORKDB_USER=networkdbuser
       - NETWORKDB_PASSWORD=networkdbpassword
-      - SINGLE_RUN=true
-      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
-      # - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/GTFS_a4_ref_20240502.zip
+      # - SINGLE_RUN=true
+      # - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
+      - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/GTFS_a4_ref_20240502.zip
     depends_on:
       - serverdb
       - networkdb
@@ -147,15 +145,12 @@ services:
       - API_URL=http://api:5050
     # ports:
     #   - "5052:5052"
-    depends_on:
-      parse-network:
-        condition: service_completed_successfully
     
   pdf-printer:
     build: 
       context: ./printer
       dockerfile: Dockerfile
-    restart: "no"
+    restart: unless-stopped
     logging:
       options:
         max-size: '1m'
@@ -166,7 +161,5 @@ services:
       - RENDER_URL=http://pdf-renderer:3000/schedule
       - QUEUE_URL=http://queue:5052
     depends_on:
-      parse-network:
-        condition: service_completed_successfully
       queue:
         condition: service_started
