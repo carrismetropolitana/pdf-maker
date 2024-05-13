@@ -71,6 +71,7 @@ async function main() {
 		} else {
 			updatedAt = timetableIndex.updated_at;
 			queue = timetableIndex.pairs;
+			i = 0;
 			await sleep(1000 * 60 * 5);
 		}
 	}
