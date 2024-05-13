@@ -6,7 +6,7 @@ export default function Schedule({ className, style, timetable }: {className?: s
 	//
 	let hashed = new Map<string, [string[], TimetablePeriod]>;
 	for (let period of timetable.periods) {
-		let h = hash([period.weekdays, period.saturdays, period.sundays_holidays], { respectType: false });
+		let h = hash([period.weekdays, period.saturdays, period.sundays_holidays], { respectType: false, unorderedArrays: true });
 		let prev = hashed.get(h);
 		if (prev === undefined) {
 			hashed.set(h, [[period.period_name], period]);
@@ -14,6 +14,7 @@ export default function Schedule({ className, style, timetable }: {className?: s
 			prev[0].push(period.period_name);
 		}
 	}
+	console.log(hashed);
 	let toRender = Array.from(hashed.values()).map(v => {
 		// Build title string, using ' e ' for the last element, unless it already has it,
 		// as is the case with Domingos e Feriados
@@ -51,7 +52,7 @@ function PeriodTable({ period }:{period:TimetablePeriod & { period_names: string
 	let hashed = new Map<string, [string[], TimetableEntry[]]>;
 	for (let p of possibilities) {
 		let times = period[p[0]];
-		let h = hash(times, { respectType: false });
+		let h = hash(times, { respectType: false, unorderedArrays: true });
 		let prev = hashed.get(h);
 		if (prev === undefined) {
 			hashed.set(h, [[p[1]], times]);
