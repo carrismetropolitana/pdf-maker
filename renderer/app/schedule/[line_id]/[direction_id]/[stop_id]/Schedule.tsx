@@ -14,7 +14,6 @@ export default function Schedule({ className, style, timetable }: {className?: s
 			prev[0].push(period.period_name);
 		}
 	}
-	console.log(hashed);
 	let toRender = Array.from(hashed.values()).map(v => {
 		// Build title string, using ' e ' for the last element, unless it already has it,
 		// as is the case with Domingos e Feriados
