@@ -132,7 +132,7 @@ function StopLabel({ stop, isBold }: {stop:Stop, isBold:boolean}) {
 	// [&::-webkit-scrollbar]:hidden my beloved
 	return <div className='flex flex-col'>
 		<div className={'flex justify-start items-center leading-3 max-w-[68mm] ' + (isBold ? 'font-medium text-[10pt]' : 'font-normal text-[8pt]')}>
-			<div className='overflow-ellipsis whitespace-nowrap overflow-x-hidden [&::-webkit-scrollbar]:hidden'>{stop.name}</div>
+			<div className='overflow-ellipsis whitespace-nowrap overflow-x-clip [&::-webkit-scrollbar]:hidden'>{stop.name}</div>
 			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6 shrink-0' />)}
 		</div>
 		<div className='text-[7pt] font-light leading-none pt-[0.8mm]'>
