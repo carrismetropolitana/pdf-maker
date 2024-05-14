@@ -81,14 +81,14 @@ function PeriodTable({ period }:{period:TimetablePeriod & { period_names: string
 	});
 	return (
 		<div>
-			<div className='flex flex-wrap gap-1'>
+			<div className='flex flex-wrap gap-1 border-b border-b-black pb-1 mb-2'>
 				{period.period_names.map((name, i) => <>
 					{i != 0 && <div className='text-slate-400 leading-none'>|</div>}
 					<div key={i} className='text-base font-semibold leading-none'>{name}</div>
 				</>)}
 			</div>
 			{/* <h2 className='text-base font-semibold'>{period.period_names.join('|')}</h2> */}
-			<div className='flex flex-col gap-2'>
+			<div className='flex flex-col gap-1'>
 				{(toRender.length > 0 ?
 					toRender.map(([title, times], i) => <SubTable key={i} title={title} times={times}/>) :
 					<div className='font-semibold text-[8pt]'>Não há horários de passagem neste período</div>)}
@@ -111,7 +111,6 @@ function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
 	}
 	// console.log(times);
 	return <div className=''>
-		<div className='bg-black h-px w-full my-2'></div>
 		<h3 className='text-sm font-medium mb-0.5'>{title}</h3>
 		<div className='flex text-[3mm]'>
 			<div className='flex flex-col '>

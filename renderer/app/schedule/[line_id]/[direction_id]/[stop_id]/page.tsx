@@ -15,6 +15,10 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 	// console.log(JSON.stringify(timetable, null, 2));
 	const patternURL = `${API_URL}/patterns/${timetable.patternForDisplay}`;
 	const patternRes = fetch(patternURL).then(patternRes => patternRes.json());
+	if (!timetable.secondaryPatterns) {
+		console.error('timetable.secondaryPatterns is undefined', timetable);
+		return;
+	}
 	const secondaryPatternsPromise = Promise.all(timetable.secondaryPatterns.map(patternId => fetch(`${API_URL}/patterns/${patternId}`).then(patternRes => patternRes.json())));
 	// console.log(patternURL, timetable.secondaryPatterns.map(patternId => `${API_URL}/patterns/${patternId}`));
 
