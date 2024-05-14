@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 	title: 'CMet PDF',
 	description: 'CMet PDF',
 };
+export const fetchCache = 'default-no-store';
 
 export default function RootLayout({
 	children,
