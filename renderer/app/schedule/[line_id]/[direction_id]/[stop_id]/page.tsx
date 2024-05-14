@@ -5,9 +5,17 @@ import Spine from './Spine';
 import Schedule from './Schedule';
 import ScheduleInfo from './ScheduleInfo';
 import Footer from './Footer';
+import { Metadata } from 'next';
 
 const API_URL = process.env.API_URL || 'http://localhost:5050';
 const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt/horarios';
+
+export async function generateMetadata({ params }:{params:{line_id:string, stop_id:string, direction_id:string}}): Promise<Metadata> {
+	return {
+		title: `Horário ${params.line_id} - #${params.stop_id}`,
+		description: `Horário ${params.line_id}/${params.direction_id} - #${params.stop_id}`,
+	};
+}
 
 export default async function Page({ params }:{params:{line_id:string, stop_id:string, direction_id:string}}) {
 	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.direction_id}/${params.stop_id}`);
