@@ -43,6 +43,7 @@ async function saveTimetableAsPDF(page: Page, path: string) {
 			let renderStart = process.hrtime();
 			await page.pdf({ path: `pdfs/timetable-${path.replace(/\//g, '-')}.pdf`, format: 'A4', printBackground: true });
 			let renderEnd = process.hrtime(renderStart);
+			console.log(`Printed timetable-${path.replace(/\//g, '-')}.pdf`);
 			pdfRenderTime += renderEnd[0] + renderEnd[1] / 1e9;
 
 			success = true;
