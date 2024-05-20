@@ -30,7 +30,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 	const secondaryPatternsPromise = Promise.all(timetable.secondaryPatterns.map(patternId => fetch(`${API_URL}/patterns/${patternId}`).then(patternRes => patternRes.json())));
 	// console.log(patternURL, timetable.secondaryPatterns.map(patternId => `${API_URL}/patterns/${patternId}`));
 
-	const [pattern, secondaryPatterns]:[	Pattern, Pattern[] ] = await Promise.all([patternRes, secondaryPatternsPromise]);
+	const [pattern, secondaryPatterns]:[ Pattern, Pattern[] ] = await Promise.all([patternRes, secondaryPatternsPromise]);
 	if (!pattern.path || !pattern.path[1] || !pattern.path[1].stop) {
 		console.error(patternURL, 'pattern.path[1].stop is undefined, pattern:', pattern);
 		return;
@@ -154,8 +154,10 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 			accumulatedDelay = 0;
 		}
 	}
-	delays[delays.length - 1].span += 1;
-	delays[delays.length - 1].delay += lastStop.delay;
+	if (delays.length > 0) {
+		delays[delays.length - 1].span += 1;
+		delays[delays.length - 1].delay += lastStop.delay;
+	}
 
 	for (let stopIndex in renderedStops) {
 		const stop = renderedStops[stopIndex];
