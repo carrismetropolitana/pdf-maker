@@ -108,3 +108,16 @@ export enum Facility {
 	BIKE_PARKING = 'bike_parking',
 	CAR_PARKING = 'car_parking',
 }
+
+export type Line = {
+  id: string
+  short_name: string
+  long_name: string
+  color: string
+  text_color: string
+  routes: string[]
+  patterns: string[]
+  municipalities: string[]
+  localities: string[]
+  facilities: Facility[]
+}

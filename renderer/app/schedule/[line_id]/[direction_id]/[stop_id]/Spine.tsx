@@ -28,7 +28,7 @@ export default function Spine(
 	}
 
 	return (
-		<div className={className + ' grid grid-cols-[5mm_4mm_1fr] items-start h-full'} style={style}>
+		<div className={className + ' grid grid-cols-[5mm_4mm_1fr] items-start h-full -translate-x-4'} style={style}>
 			<div className='col-start-1 relative' style={{ gridRowStart: 1 }}>
 				<div className='absolute top-[16pt]'>
 
@@ -68,14 +68,13 @@ export default function Spine(
 				</div>
 			</div>
 
-			<div className='gap-1 h-9 col-start-3 self-center relative top-px' style={{ gridRowStart: 1 }}>
+			<div className='h-9 col-start-3 relative' style={{ gridRowStart: 1 }}>
 				<div className='flex items-center gap-2 h-9 absolute top-1/2'>
-					<div className='bg-black h-px mt-px w-2' >
-					</div>
+					<div className='bg-black h-px w-[2mm]'></div>
 					<StopLabel stop={firstStop} isBold={true}/>
 				</div>
 			</div>
-			{renderedStops.map((stop, i) => <div key={i} className='gap-1 h-9 col-start-3 relative' style={{ gridRowStart: i + 2 }}>
+			{renderedStops.map((stop, i) => <div key={i} className='h-9 col-start-3 relative' style={{ gridRowStart: i + 2 }}>
 				<div className='absolute top-1/2 flex items-center gap-2 h-9'>
 					{isStop(stop) ?
 						<Fragment>
@@ -90,8 +89,7 @@ export default function Spine(
 											<div className='h-[2mm] w-[2mm] rounded-full bg-white'></div>
 										</div></div>
 								</div> : ''}
-							<div className='bg-black h-px w-[2mm]' >
-							</div>
+							<div className='bg-black h-px w-[2mm]' ></div>
 							<StopLabel stop={stop.stop} isBold={stop.stop.id === currentStopId}/>
 						</Fragment> :
 						<Fragment>
@@ -118,10 +116,9 @@ export default function Spine(
 					</svg>
 				</div>
 			</div>
-			<div className='gap-2 h-9 col-start-3 relative ' style={{ gridRowStart: renderedStops.length + 2 }}>
-				<div className='absolute top-1/2 flex items-center gap-1 h-9'>
-					<div className='bg-black h-[1px] w-2' >
-					</div>
+			<div className='h-9 col-start-3 relative ' style={{ gridRowStart: renderedStops.length + 2 }}>
+				<div className='flex items-center gap-2 h-9 absolute top-1/2'>
+					<div className='bg-black h-px w-[2mm]'></div>
 					<StopLabel stop={lastStop} isBold={true}/>
 				</div>
 			</div>
@@ -131,12 +128,12 @@ export default function Spine(
 function StopLabel({ stop, isBold }: {stop:Stop, isBold:boolean}) {
 	// [&::-webkit-scrollbar]:hidden my beloved
 	return <div className='flex flex-col'>
-		<div className={'flex justify-start items-center leading-3 max-w-[68mm] ' + (isBold ? 'font-medium text-[10pt]' : 'font-normal text-[8pt]')}>
+		<div className={'flex justify-start items-center leading-3 max-w-[73mm] ' + (isBold ? 'font-medium text-[10pt]' : 'font-normal text-[8pt]')}>
 			<div className='overflow-ellipsis whitespace-nowrap overflow-x-clip [&::-webkit-scrollbar]:hidden'>{stop.name}</div>
 			{stop.facilities.map((facility, i) => <FacilityIcon key={i} facility={facility} className='w-[6mm] h-[5mm] -my-6 shrink-0' />)}
 		</div>
 		<div className='text-[7pt] font-light leading-none pt-[0.8mm]'>
-			{stop.locality && stop.locality + ', '}{stop.municipality}
+			{stop.locality && stop.locality !== stop.municipality && stop.locality + ', '}{stop.municipality}
 		</div>
 	</div>;
 }

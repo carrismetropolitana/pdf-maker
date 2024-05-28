@@ -1,23 +1,23 @@
-import { CSSProperties } from 'react';
+import { CSSProperties, Fragment } from 'react';
 import { Timetable, TimetableEntry, TimetablePeriod } from './apitypes';
 import hash from 'object-hash';
 
 export default function Schedule({ className, style, timetable }: {className?: string, style?: CSSProperties, timetable:Timetable}) {
 	//
-	let hashed = new Map<string, [string[], TimetablePeriod]>;
+	let hashed = new Map<string, {titles:string[], period:TimetablePeriod}>;
 	for (let period of timetable.periods) {
 		let h = hash([period.weekdays, period.saturdays, period.sundays_holidays], { respectType: false, unorderedArrays: true });
 		let prev = hashed.get(h);
 		if (prev === undefined) {
-			hashed.set(h, [[period.period_name], period]);
+			hashed.set(h, { titles: [period.period_name], period: period });
 		} else {
-			prev[0].push(period.period_name);
+			prev.titles.push(period.period_name);
 		}
 	}
 	let toRender = Array.from(hashed.values()).map(v => {
 		// Build title string, using ' e ' for the last element, unless it already has it,
 		// as is the case with Domingos e Feriados
-		let [titles, period] = v;
+		let { titles, period } = v;
 		let str = '';
 		if (titles.length == 1) str = titles[0];
 		else {
@@ -39,7 +39,7 @@ export default function Schedule({ className, style, timetable }: {className?: s
 		return 0;
 	});
 	return (
-		<div className={className + ' flex flex-col gap-5'} style={style}>
+		<div className={className + ' flex flex-col gap-2'} style={style}>
 			{toRender.map((period, i) => <PeriodTable key={i} period={period} />)}
 			<Exceptions exceptions={timetable.exceptions}/>
 		</div>
@@ -48,29 +48,33 @@ export default function Schedule({ className, style, timetable }: {className?: s
 function PeriodTable({ period }:{period:TimetablePeriod & { period_names: string[] }}) {
 	// Merge timetables which are the same, and their names
 	let possibilities = [['weekdays', 'Dias Úteis'], ['saturdays', 'Sábados'], ['sundays_holidays', 'Domingos e Feriados']] as const;
-	let hashed = new Map<string, [string[], TimetableEntry[]]>;
-	for (let p of possibilities) {
-		let times = period[p[0]];
+	let hashed = new Map<string, {titles:string[], timetables:TimetableEntry[]}>;
+	for (let [weekDayId, weekDayText] of possibilities) {
+		let times = period[weekDayId];
 		let h = hash(times, { respectType: false, unorderedArrays: true });
 		let prev = hashed.get(h);
 		if (prev === undefined) {
-			hashed.set(h, [[p[1]], times]);
+			hashed.set(h, { titles: [weekDayText], timetables: times });
 		} else {
-			prev[0].push(p[1]);
+			prev.titles.push(weekDayText);
 		}
 	}
 	let toRender = Array.from(hashed.values()).map(v => {
 		// Build title string, using ' e ' for the last element, unless it already has it,
 		// as is the case with Domingos e Feriados
-		let [titles, times] = v;
-		let str = '';
+		let { titles, timetables } = v;
+		let finalTitle = '';
 		for (let i = 0; i < titles.length; i++) {
-			let t = titles[i];
-			if (i == titles.length - 1 && !t.includes(' e ') && i > 0) str += ' e ' + t;
-			else if (i > 0) str += ', ' + t;
-			else str += t;
+			let title = titles[i];
+			if (i == titles.length - 1 && !title.includes(' e ') && i > 0) {
+				finalTitle += ' e ' + title;
+			} else if (i > 0) {
+				finalTitle += ', ' + title;
+			} else {
+				finalTitle += title;
+			}
 		}
-		return [str, times] as [string, TimetableEntry[]];
+		return [finalTitle, timetables] as [string, TimetableEntry[]];
 	}).sort((a, b) => {
 		// Sort the names so that we always get strings starting with Dias Úteis first, and Domingos last
 		if (a[0].startsWith('Dias Úteis')) return -1;
@@ -82,10 +86,10 @@ function PeriodTable({ period }:{period:TimetablePeriod & { period_names: string
 	return (
 		<div>
 			<div className='flex flex-wrap gap-1 border-b border-b-black pb-1 mb-2'>
-				{period.period_names.map((name, i) => <>
+				{period.period_names.map((name, i) => <Fragment key={i}>
 					{i != 0 && <div className='text-slate-400 leading-none'>|</div>}
 					<div key={i} className='text-base font-semibold leading-none'>{name}</div>
-				</>)}
+				</Fragment>)}
 			</div>
 			{/* <h2 className='text-base font-semibold'>{period.period_names.join('|')}</h2> */}
 			<div className='flex flex-col gap-1'>
@@ -100,7 +104,7 @@ function PeriodTable({ period }:{period:TimetablePeriod & { period_names: string
 function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
 	let timesByHour = Array.from<number[], {minute:number, exceptions:string[]}[]>({ length: 25 }, () => []);
 	for (let entry of times) {
-		const [hour, minute, _] = entry.time.split(':').map(s => parseInt(s, 10));
+		const [hour, minute, _second] = entry.time.split(':').map(s => parseInt(s, 10));
 		const exception = entry.exceptions.map(e => e.id);
 		let span = timesByHour[hour];
 		if (span && !span.find(elem => elem.minute == minute)) span.push({ minute, exceptions: exception });

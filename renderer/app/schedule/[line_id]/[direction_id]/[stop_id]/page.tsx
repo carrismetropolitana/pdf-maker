@@ -1,4 +1,4 @@
-import { Facility, Pattern, Timetable } from './apitypes';
+import { Facility, Line, Pattern, Timetable } from './apitypes';
 import QRCode from 'qrcode';
 import Header from './Header';
 import Spine from './Spine';
@@ -16,10 +16,16 @@ export async function generateMetadata({ params }:{params:{line_id:string, stop_
 		description: `Horário ${params.line_id}/${params.direction_id} - #${params.stop_id}`,
 	};
 }
+function urlsToJson<T extends readonly string[]>(urls: [...T]) {
+	// Deluxe Typescript magic™ to make the return type an array of the same length as the input array
+	return Promise.all(urls.map(url => fetch(url).then(res => res.json()))) as Promise<{ -readonly [P in keyof T]: any; }>;
+}
 
 export default async function Page({ params }:{params:{line_id:string, stop_id:string, direction_id:string}}) {
-	const timetableRes = await fetch(`${API_URL}/timetables/${params.line_id}/${params.direction_id}/${params.stop_id}`);
-	const timetable: Timetable = await timetableRes.json();
+	const [timetable, line]:[Timetable, Line] = await urlsToJson([
+		`${API_URL}/timetables/${params.line_id}/${params.direction_id}/${params.stop_id}`,
+		`${API_URL}/lines/${params.line_id}`,
+	]);
 	// console.log(JSON.stringify(timetable, null, 2));
 	const patternURL = `${API_URL}/patterns/${timetable.patternForDisplay}`;
 	const patternRes = fetch(patternURL).then(patternRes => patternRes.json());
@@ -27,14 +33,16 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		console.error('timetable.secondaryPatterns is undefined', timetable);
 		return;
 	}
-	const secondaryPatternsPromise = Promise.all(timetable.secondaryPatterns.map(patternId => fetch(`${API_URL}/patterns/${patternId}`).then(patternRes => patternRes.json())));
-	// console.log(patternURL, timetable.secondaryPatterns.map(patternId => `${API_URL}/patterns/${patternId}`));
+	// const secondaryPatternsPromise = urlsToJson(timetable.secondaryPatterns
+	// 	.map(patternId => `${API_URL}/patterns/${patternId}`));
 
-	const [pattern, secondaryPatterns]:[ Pattern, Pattern[] ] = await Promise.all([patternRes, secondaryPatternsPromise]);
+	// const [pattern, secondaryPatterns]:[ Pattern, Pattern[] ] = await Promise.all([patternRes, secondaryPatternsPromise]);
+	const pattern:Pattern = await patternRes;
 	if (!pattern.path || !pattern.path[1] || !pattern.path[1].stop) {
 		console.error(patternURL, 'pattern.path[1].stop is undefined, pattern:', pattern);
 		return;
 	}
+	// console.log(line);
 	const stopInfoURL = `${API_URL}/stops/${params.stop_id}`;
 	const stopInfoRes = await fetch(stopInfoURL);
 	const stopInfo = await stopInfoRes.json();
@@ -183,7 +191,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 
 	return (
 		<div>
-			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} headsigns={[pattern.headsign, ...secondaryPatterns.map(p => p.headsign)]} dataurl={dataurl} />
+			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} headsign={line.long_name} dataurl={dataurl} />
 			<div className='flex flex-row w-full p-4'>
 				<Spine className='grow -translate-y-3.5' color={pattern.color} firstStop={firstStop} lastStop={lastStop} delays={delays} renderedStops={renderedStops} currentStopId={params.stop_id} />
 				<div className='text-neutral-800 w-[430px] flex flex-col gap-4'>
