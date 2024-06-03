@@ -9,6 +9,7 @@ services:
   networkdb:
     image: postgres:alpine
     restart: unless-stopped
+    mem_limit: 2g
     logging:
       options:
         max-size: '1m'
@@ -28,6 +29,7 @@ services:
   serverdb:
     image: redis:alpine
     restart: unless-stopped
+    mem_limit: 2g
     logging:
       options:
         max-size: '1m'
@@ -50,6 +52,7 @@ services:
   api:
     image: ghcr.io/carrismetropolitana/api-server:beta
     restart: unless-stopped
+    mem_limit: 2g
     logging:
       driver: none
     environment:
@@ -70,6 +73,7 @@ services:
   parse-network:
     image: ghcr.io/carrismetropolitana/api-parse-network:beta
     restart: unless-stopped
+    mem_limit: 2g
     logging:
       options:
         max-size: '1m'
@@ -80,8 +84,8 @@ services:
       - NETWORKDB_USER=networkdbuser
       - NETWORKDB_PASSWORD=networkdbpassword
       # - SINGLE_RUN=true
-      # - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
-      - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/GTFS_a4_ref_20240502.zip
+      - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
+      # - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/GTFS_a4_ref_20240502.zip
     depends_on:
       - serverdb
       - networkdb
@@ -93,6 +97,7 @@ services:
   pdf-renderer:
     image: ghcr.io/carrismetropolitana/pdf-maker-renderer:production
     restart: unless-stopped
+    mem_limit: 2g
     logging:
       options:
         max-size: '1m'
@@ -111,6 +116,7 @@ services:
   queue:
     image: ghcr.io/carrismetropolitana/pdf-maker-queue:production
     restart: unless-stopped
+    mem_limit: 2g
     logging:
       options:
         max-size: '1m'
@@ -119,10 +125,11 @@ services:
       - API_URL=http://api:5050
     # ports:
     #   - "5052:5052"
-    
+
   pdf-printer:
     image: ghcr.io/carrismetropolitana/pdf-maker-printer:production
     restart: unless-stopped
+    mem_limit: 2g
     logging:
       options:
         max-size: '1m'
