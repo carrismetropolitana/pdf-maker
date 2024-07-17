@@ -27,6 +27,10 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		`${API_URL}/lines/${params.line_id}`,
 	]);
 	// console.log(JSON.stringify(timetable, null, 2));
+	if (!timetable) {
+		console.error('timetable is undefined', timetable, params.line_id, params.direction_id, params.stop_id);
+	}
+
 	const patternURL = `${API_URL}/patterns/${timetable.patternForDisplay}`;
 	const patternRes = fetch(patternURL).then(patternRes => patternRes.json());
 	if (!timetable.secondaryPatterns) {
@@ -42,7 +46,11 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 		console.error(patternURL, 'pattern.path[1].stop is undefined, pattern:', pattern);
 		return;
 	}
-	// console.log(line);
+
+	const headsign:string = timetable.patternForDisplay.split('_')[1] === '0' ?
+		line.long_name :
+		await fetch(`${API_URL}/routes/${timetable.patternForDisplay.slice(0, -2)}`).then(res => res.json()).then(line => line.long_name);
+
 	const stopInfoURL = `${API_URL}/stops/${params.stop_id}`;
 	const stopInfoRes = await fetch(stopInfoURL);
 	const stopInfo = await stopInfoRes.json();
@@ -191,7 +199,7 @@ export default async function Page({ params }:{params:{line_id:string, stop_id:s
 
 	return (
 		<div>
-			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} headsign={line.long_name} dataurl={dataurl} />
+			<Header backgroundColor={pattern.color} color={pattern.text_color} lineId={params.line_id} headsign={headsign} dataurl={dataurl} />
 			<div className='flex flex-row w-full p-4'>
 				<Spine className='grow -translate-y-3.5' color={pattern.color} firstStop={firstStop} lastStop={lastStop} delays={delays} renderedStops={renderedStops} currentStopId={params.stop_id} />
 				<div className='text-neutral-800 w-[430px] flex flex-col gap-4'>

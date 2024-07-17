@@ -102,11 +102,13 @@ function PeriodTable({ period }:{period:TimetablePeriod & { period_names: string
 }
 
 function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
-	let timesByHour = Array.from<number[], {minute:number, exceptions:string[]}[]>({ length: 25 }, () => []);
+	let timesByHour = Array.from<number[], {minute:number, exceptions:string[]}[]>({ length: 24 }, () => []);
 	for (let entry of times) {
 		const [hour, minute, _second] = entry.time.split(':').map(s => parseInt(s, 10));
 		const exception = entry.exceptions.map(e => e.id);
-		let span = timesByHour[hour];
+		// -4 because gtfs is from 4 am to 4 am
+		let span = timesByHour[hour - 4];
+		if (!span) console.error(`Could not fit hour ${hour} in schedule`);
 		if (span && !span.find(elem => elem.minute == minute)) span.push({ minute, exceptions: exception });
 	}
 	// sort each span
@@ -122,7 +124,7 @@ function SubTable({ title, times }:{title:string, times:TimetableEntry[]}) {
 				{times.length != 0 && <div className='text-center text-[7.5pt]'>Min.</div>}
 			</div>
 			{timesByHour.map((minutes, hour) => <div key={hour} className='flex flex-col items-stretch w-4 text-[7mm]'>
-				<div className={'bg-black text-white text-center font-semibold text-[8pt] h-[4mm] leading-none flex items-center justify-center relative ' + (hour == timesByHour.length - 1 ? ' pr-1 -mr-1 rounded-r-full' : '')}>{hour}</div>
+				<div className={'bg-black text-white text-center font-semibold text-[8pt] h-[4mm] leading-none flex items-center justify-center relative ' + (hour == timesByHour.length - 1 ? ' pr-1 -mr-1 rounded-r-full' : '')}>{(hour + 4) % 24}</div>
 				{minutes.map((entry, i) => <div key={i} className={'text-[7.5pt] text-center relative self-center'}>
 					{entry.minute.toString().padStart(2, '0')}
 					{entry.exceptions && <div className='absolute top-[1pt] left-full font-semibold text-[4pt] flex flex-col leading-none'>
