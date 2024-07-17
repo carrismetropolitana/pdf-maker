@@ -7,6 +7,9 @@ const RENDER_URL = process.env.RENDER_URL || 'http://localhost:3000/schedule';
 const PARALLEL = parseInt(process.env.TABS) || 12;
 const CACHE_SIZE = PARALLEL * 2;
 const REFRESH_AFTER = parseInt(process.env.REFRESH_AFTER) || 100;
+
+const SINGLE_RUN = process.env.SINGLE_RUN == 'true' || false;
+
 console.log(`QUEUE_URL: ${QUEUE_URL}`);
 console.log(`RENDER_URL: ${RENDER_URL}`);
 console.log(`PARALLEL: ${PARALLEL}`);
@@ -103,6 +106,10 @@ async function replenishQueue() {
 			let maybeItem: { finished: boolean, item: string | null } = await response.json();
 
 			if (maybeItem.finished) {
+				if (SINGLE_RUN) {
+					console.log('Finished processing all items');
+					process.exit(0);
+				}
 				await new Promise(resolve => setTimeout(resolve, 5000));
 			} else if (maybeItem.item) {
 				queue.push(maybeItem.item);

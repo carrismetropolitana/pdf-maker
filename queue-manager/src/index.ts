@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import process from 'process';
 import Fastify from 'fastify';
-import { start } from 'repl';
 const fastify = Fastify({ logger: false });
 
 const API_URL = process.env.API_URL || 'http://localhost:5050';
 const LOG_EVERY = parseInt(process.env.LOG_EVERY) || 100;
+const SINGLE_RUN = process.env.SINGLE_RUN == 'true' || false;
 
 let updatedAt:string|null = null;
 let queue = [];
@@ -31,6 +31,7 @@ async function main() {
 			startTime = currentTime;
 		}
 		if (queue.length === 0) {
+			if (SINGLE_RUN && updatedAt != null) setTimeout(() => { process.exit(0); }, 1000);
 			return { finished: true, item: null };
 		}
 		i++;
