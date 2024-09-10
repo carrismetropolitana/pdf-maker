@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Helper to return a value's internal object [[Class]]
 // That this returns [object Type] even for primitives
-function getClass(obj:Object) {
+function getClass(obj: object) {
 	return Object.prototype.toString.call(obj);
 }
 
@@ -9,7 +10,7 @@ function getClass(obj:Object) {
 ** @returns {boolean} - true if a and b are the object or same primitive value or
 **                      have the same properties with the same values
 */
-export function objectTester(a:any, b:any):boolean {
+export function objectTester(a: any, b: any): boolean {
 	// If a and b reference the same value, return true
 	if (a === b) return true;
 
@@ -21,8 +22,8 @@ export function objectTester(a:any, b:any):boolean {
 	if (typeof a == 'number' && isNaN(a) && isNaN(b)) return true;
 
 	// Get internal [[Class]]
-	var aClass = getClass(a);
-	var bClass = getClass(b);
+	const aClass = getClass(a);
+	const bClass = getClass(b);
 
 	// Return false if not same class
 	if (aClass != bClass) return false;
@@ -44,14 +45,16 @@ export function objectTester(a:any, b:any):boolean {
 		// and are different functions
 		if (aClass == '[object Function]' && a.toString() != b.toString()) return false;
 
-		var aKeys = Object.keys(a);
-		var bKeys = Object.keys(b);
+		const aKeys = Object.keys(a);
+		const bKeys = Object.keys(b);
 
 		// If they don't have the same number of keys, return false
 		if (aKeys.length != bKeys.length) return false;
 
 		// Check they have the same keys
-		if (!aKeys.every(function (key) { return Object.prototype.hasOwnProperty.call(b, key); })) return false;
+		if (!aKeys.every(function (key) {
+			return Object.prototype.hasOwnProperty.call(b, key);
+		})) return false;
 
 		// Check key values - uses ES5 Object.keys
 		return aKeys.every(function (key) {

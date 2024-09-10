@@ -39,7 +39,8 @@ async function saveTimetableAsPDF(page: Page, path: string) {
 	while (!success) {
 		try {
 			let gotoStart = process.hrtime();
-			await page.goto(`${RENDER_URL}/${path}`, { waitUntil: 'load' });
+			let response = await page.goto(`${RENDER_URL}/${path}`, { waitUntil: 'load' });
+			if (response.status() != 200) throw new Error('Response is ' + response.status());
 			let gotoEnd = process.hrtime(gotoStart);
 			pageGotoTime += gotoEnd[0] + gotoEnd[1] / 1e9;
 
@@ -52,7 +53,7 @@ async function saveTimetableAsPDF(page: Page, path: string) {
 			success = true;
 			count++;
 		} catch (e) {
-			console.error(`Error saving timetable as PDF: ${e.message}`);
+			console.error(`Error saving ${path} as PDF: ${e.message}`);
 		}
 	}
 }
@@ -99,7 +100,9 @@ async function parallelGen(PARALLEL: number, timetablePaths: AsyncGenerator<stri
 let queue: string[] = [];
 
 // Helper function to fetch items and replenish the queue
-async function replenishQueue() {
+let finished = false;
+async function replenishQueue():Promise<undefined | 'finished'> {
+	if (finished) return 'finished';
 	while (queue.length < CACHE_SIZE) {
 		try {
 			let response = await fetch(`${QUEUE_URL}/nextitem`);
@@ -108,7 +111,8 @@ async function replenishQueue() {
 			if (maybeItem.finished) {
 				if (SINGLE_RUN) {
 					console.log('Finished processing all items');
-					process.exit(0);
+					finished = true;
+					return 'finished';
 				}
 				await new Promise(resolve => setTimeout(resolve, 5000));
 			} else if (maybeItem.item) {
@@ -116,7 +120,7 @@ async function replenishQueue() {
 				// console.log(`Item added: ${maybeItem.item}`);
 			}
 		} catch (error) {
-			console.error('Failed to fetch item:', error);
+			console.error(`Error fetching next item: ${error}`);
 		}
 	}
 	// console.log(`Replenished queue with ${queue.length} items`);
@@ -124,10 +128,13 @@ async function replenishQueue() {
 
 // Asynchronous generator function to manage the queue and yield items
 async function* itemGenerator() {
-	while (true) {
+	let finished = false;
+	while (!finished) {
 		// console.log(`Queue length: ${queue.length}, finished: ${finished}`);
 		if (queue.length === 0) {
-			await replenishQueue(); // Call replenishQueue without awaiting it
+			const res = await replenishQueue();
+			finished = res === 'finished';
+			if (finished) return;
 			console.log('Had to wait for replenishQueue');
 		} else if (queue.length < CACHE_SIZE) {
 			replenishQueue(); // Call replenishQueue without awaiting it

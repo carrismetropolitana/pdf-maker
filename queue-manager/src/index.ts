@@ -1,19 +1,22 @@
 import 'dotenv/config';
 import process from 'process';
 import Fastify from 'fastify';
+import getRedisClient from './redis';
 const fastify = Fastify({ logger: false });
 
-const API_URL = process.env.API_URL || 'http://localhost:5050';
 const LOG_EVERY = parseInt(process.env.LOG_EVERY) || 100;
 const SINGLE_RUN = process.env.SINGLE_RUN == 'true' || false;
+const PORT = parseInt(process.env.PORT) || 5052;
 
 let updatedAt:string|null = null;
 let queue = [];
 
 async function fetchTimetables():Promise<{updated_at:string, pairs:string[]}> {
 	console.log('Fetching timetables...');
-	let response = await fetch(`${API_URL}/timetables`);
-	return response.json();
+	const REDIS = await getRedisClient();
+	let response = await REDIS.get('timetables:index');
+	console.log('queue fetch timetables', response);
+	return JSON.parse(response);
 }
 
 async function sleep(ms: number) {
@@ -53,7 +56,7 @@ async function main() {
 	});
 
 	try {
-		await fastify.listen({ port: 5052, host: '0.0.0.0' });
+		await fastify.listen({ port: PORT, host: '0.0.0.0' });
 	} catch (e) {
 		console.error(e);
 		process.exit(1);
@@ -77,5 +80,6 @@ async function main() {
 		}
 	}
 }
+console.log(`Queue Manager running on port ${PORT}`);
 
 main();

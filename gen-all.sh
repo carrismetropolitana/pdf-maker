@@ -1,4 +1,4 @@
-#!/bin/bash
+# !/bin/bash
 
 
 cleanup() {
@@ -55,10 +55,10 @@ rm -rf ./printer/pdfs/*
   cd ./printer/ && sleep 10 && SINGLE_RUN=true npm run start
 ) &
 PRINTER_PID1=$!
-(
-  cd ./printer/ && sleep 10 && SINGLE_RUN=true npm run start
-) &
-PRINTER_PID2=$!
+# (
+#   cd ./printer/ && sleep 10 && SINGLE_RUN=true npm run start
+# ) &
+# PRINTER_PID2=$!
 
 # Wait for the queue manager and both printer processes to finish
 wait $QUEUE_MANAGER_PID
@@ -70,6 +70,6 @@ kill $API_PID
 kill $STANDALONE_PID
 kill $MAIN_API_PID
 
-(cd ./printer/pdfs && zip ../../$(date +"%Y-%m-%d")$(basename $1) *.pdf)
+(cd ./printer/pdfs && ../../organize_by_stop_id.sh && zip ../../$(date +"%Y-%m-%d")$(basename $1) */*.pdf)
 
 

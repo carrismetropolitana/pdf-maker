@@ -10,9 +10,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@carrismetropolitana/eslint": "^20240722.1548.55",
     "next": "14.1.0",
     "qrcode": "^1.5.3",
     "react": "^18",
+    "redis": "4.7.0",
     "react-dom": "^18"
   },
   "devDependencies": {
@@ -23,7 +25,7 @@
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
-    "eslint-config-next": "14.1.0",
+    "eslint-config-next": "^14.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"

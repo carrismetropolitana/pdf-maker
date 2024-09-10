@@ -1,23 +1,28 @@
 {
   "eslint.options": {
-    "extensions": [
-      ".ts",
-      ".js",
-      ".tsx",
-      ".jsx",
-      ".cjs"
-    ]
   },
+  "eslint.workingDirectories": ["./frontend", "./renderer"],
   "editor.defaultFormatter": "dbaeumer.vscode-eslint",
   "editor.formatOnSave": true,
   "eslint.format.enable": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+
   "eslint.validate": [
     "javascript",
-    "typescript"
-  ],
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    "vue",
+    "html",
+    "markdown",
+    "json",
+    "jsonc",
+    "yaml",
+    "toml",
+    "astro"
+	],
   "editor.tabSize": 2,
   "[html]": {
     "editor.defaultFormatter": "vscode.html-language-features"
