@@ -1,4 +1,12 @@
-/static
-/static/**/*
-build
-pdfs
+**/build
+**/pdfs
+**/node_modules
+**/.next
+**/build
+**/dist
+**/next-env.d.ts
+
+
+# don't include random files
+**/*.zip
+**/*.sqlite

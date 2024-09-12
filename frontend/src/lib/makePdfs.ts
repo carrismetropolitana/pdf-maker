@@ -1,8 +1,9 @@
 import { $, write } from 'bun';
-import { readdir,mkdir } from 'fs/promises';
+import { mkdir, readdir, rename } from 'fs/promises';
 
+import { existsSync, mkdirSync } from 'fs';
+import envVars from './env';
 import { formatDate } from './utils';
-import { rename } from 'fs/promises';
 
 export default async function makePdfs(fileBytes: Uint8Array, area: string, wantedLines: string[], excludedLines: string[], validFrom: string) {
 	console.log('validFrom', validFrom);
@@ -18,7 +19,7 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 	// Trap SIGINT signal (Ctrl+C)
 	process.once('SIGINT', cleanup);
 
-	console.log('Writing GTFS file...', fileBytes.length);
+	console.log('Writing GTFS file...',);
 	await write('../parse-network/gtfs.zip', fileBytes);
 	await $`zip ../gtfs.zip *`.cwd('../parse-network/extraGtfsFiles');
 	const PATH = Bun.env['PATH']?.split(':').filter(path => !path.includes('/tmp/bun-node')).join(':') || '';
@@ -27,48 +28,51 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 
 	// Start the API server and save its PID
 	const environment = {
-		NETWORKDB_HOST: 'localhost',
-		NETWORKDB_PASSWORD: 'networkdbpassword',
-		NETWORKDB_USER: 'networkdbuser',
-		SERVERDB_HOST: 'localhost',
+		NETWORKDB_HOST: envVars.pg.host,
+		NETWORKDB_PASSWORD: envVars.pg.pw,
+		NETWORKDB_USER: envVars.pg.user,
+		SERVERDB_HOST: envVars.redis.host,
+		REDIS_HOST: envVars.redis.host
 	};
-	// console.log('Starting gtfs parser...');
-	const PARSE_NETWORK = (Bun.spawn(['npm', 'run', 'start'], {
+	console.log('starting parse-network...');
+	const PARSE_NETWORK = Bun.spawn(['bun', 'index.ts'], {
 		cwd: '../parse-network',
 		env: {
 			...process.env,
 			...environment,
+			EXCLUDED_LINES: JSON.stringify(excludedLines),
 			GTFS_URL: 'file://gtfs.zip',
+			INCLUDED_LINES: JSON.stringify(wantedLines),
 			PATH,
 			SINGLE_RUN: 'true',
-			INCLUDED_LINES: JSON.stringify(wantedLines),
-			EXCLUDED_LINES: JSON.stringify(excludedLines),
 		},
-		stdout: 'inherit',
-	}));
+		// stdout: 'inherit',
+		// stderr: 'inherit',
+	});
+	console.log('parse-network exited with', await PARSE_NETWORK.exited);
 
-	console.log('Building renderer...');
-	await $`npm run build`
-		.cwd('../renderer')
-		.env({
-			...process.env,
-			NODE_ENV: 'production',
-			PATH,
-		})
-		.catch(console.error);
-	// console.log('Build exited with', await BUILD_RENDERER.exited);
-	await $`cp .next/static .next/standalone/.next/static -r`.cwd('../renderer');
+	// console.log('Building renderer...');
+	// await $`bun run build`
+	// 	.cwd('../renderer')
+	// 	.env({
+	// 		...process.env,
+	// 		NODE_ENV: 'production',
+	// 		PATH,
+	// 	})
+	// 	.catch(console.error);
+	// // console.log('Build exited with', await BUILD_RENDERER.exited);
+	// await $`cp .next/static .next/standalone/.next/static -r`.cwd('../renderer');
 
-	await PARSE_NETWORK.exited;
+	// await PARSE_NETWORK.exited;
 
 	// // Start the standalone server and save its PID
-	console.log('Starting Next.js server...');
-	const STANDALONE = Bun.spawn(['node', '.next/standalone/server.js'],
+	const STANDALONE = Bun.spawn(['bun', 'server.js'],
 		{
 			cwd: '../renderer',
 			env: {
 				...process.env,
-				API_URL: 'http://localhost:5050',
+				...environment,
+				API_URL: 'http://pdf-frontend:5050',
 				PATH,
 				PORT: '5051',
 				VALID_FROM_DATE: validFrom,
@@ -77,12 +81,12 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 			// stdout: 'inherit',
 		});
 
-	// Start the queue manager and save its PID
-	await new Promise(resolve => setTimeout(resolve, 5000));
-	const QUEUE_MANAGER = (Bun.spawn(['npm', 'run', 'start'], {
+
+	const QUEUE_MANAGER = (Bun.spawn(['bun', 'src/index.ts'], {
 		cwd: '../queue-manager',
 		env: {
 			...process.env,
+			...environment,
 			PATH,
 			PORT: '5052',
 			SINGLE_RUN: 'true',
@@ -91,24 +95,35 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 		// stdout: 'inherit',
 	}));
 
+	await new Promise(resolve => setTimeout(resolve, 5000));
+	console.log('finished starting queue manager');
+
 	// // Clean up the printer PDFs directory
+	console.log('Cleaning up printer pdfs...');
 	await $`rm -rf ../printer/pdfs/* `.catch(() => {
 		console.log('No pdfs to delete');
 	});
+	console.log('finished cleaning up printer pdfs');
 
-	// Start the printer and save its PID
-	await new Promise(resolve => setTimeout(resolve, 5000));
-	const PRINTER = (Bun.spawn(['sh', '-c', 'npm run start'], {
+
+	console.log('Starting printer...');
+	const PRINTER = (Bun.spawn(['bun','src/index.ts'], {
 		cwd: '../printer',
 		env: {
 			...process.env,
+			...environment,
 			PATH,
-			RENDER_URL: 'http://localhost:5051/schedule',
+			RENDER_URL: 'http://pdf-frontend:5051/schedule',
+			QUEUE_URL: 'http://pdf-frontend:5052',
 			SINGLE_RUN: 'true',
 		},
 		stderr: 'inherit',
 		stdout: 'inherit',
 	}));
+
+	await new Promise(resolve => setTimeout(resolve, 5000));
+	console.log('finished starting printer');
+
 
 	// Wait for the queue manager and both printer processes to finish
 	await QUEUE_MANAGER?.exited;
@@ -121,7 +136,6 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 
 	// Organize PDFs and zip them
 	const date = new Date();
-	const filename = `${formatDate(date)}-A${area}.zip`;
 	await $`rm ../result.zip`.catch(() => null);
 
 	const pdfFiles = await readdir('../printer/pdfs');
@@ -147,6 +161,16 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 	}
 
 	await $`zip ../../result.zip */*.pdf`.cwd('../printer/pdfs');
-	await $`rsync -P ../result.zip "cmet-storage:/opt/app/static/pdfs/${filename}"`;
-	return `https://storage.carrismetropolitana.pt/static/pdfs/${filename}`;
+
+	
+	// check if ./files directory exists
+	if (!existsSync(`./files`)) {
+		mkdirSync(`./files`);
+	}
+	// move the zip file to the ./files directory
+
+	const filename = `${formatDate(date)}-A${area}.zip`;
+	await rename(`../result.zip`, `./files/${filename}`)
+	
+	return `./files/${filename}`;
 }

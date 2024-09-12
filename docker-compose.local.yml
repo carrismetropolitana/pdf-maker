@@ -1,28 +1,4 @@
-volumes:
-  certbotdata:
-  serverdb:
-
 services:
-  
-
-  # # # # # # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # # # # # # #
-
-  # tts-generator:
-  #   image: ghcr.io/carrismetropolitana/tts-generator:production
-  #   restart: unless-stopped
-  #   logging:
-  #     options:
-  #       max-size: '1m'
-  #       max-file: '1'
-  #   volumes:
-  #     - ./static/tts/live:/app/outputs
-  #     - ./tts_generator/credentials:/app/credentials
-  #     - ./tts_generator/trackers:/app/trackers
-  #   environment:
-  #     - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/google-cloud-key.json
-
-
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
 
@@ -52,8 +28,8 @@ services:
       options:
         max-size: '1m'
         max-file: '1'
-    volumes:
-      - serverdb:/data
+    # volumes:
+    #   - serverdb:/data
     environment:
       - REDIS_ARGS=--save 5 1
     # ports:
@@ -67,99 +43,23 @@ services:
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
 
-  api:
-    image: ghcr.io/carrismetropolitana/api-server:beta
-    restart: unless-stopped
-    logging:
-      driver: none
-    environment:
-      - SERVERDB_HOST=serverdb
-      # - MONGODB_URI=mongodb://mongodbuser:mongodbpassword@localhost:27017/production?authSource=admin
-    # secrets:
-    #   - realtimedbkey
-    depends_on:
-      serverdb:
-        condition: service_healthy
-      networkdb:
-        condition: service_healthy
-
-
-  # # # # # # # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # # # # # # # #
-
-  parse-network:
-    image: ghcr.io/carrismetropolitana/api-parse-network:beta
-    restart: unless-stopped
-    logging:
-      options:
-        max-size: '1m'
-        max-file: '1'
-    environment:
-      - SERVERDB_HOST=serverdb
-      - NETWORKDB_HOST=networkdb
-      - NETWORKDB_USER=networkdbuser
-      - NETWORKDB_PASSWORD=networkdbpassword
-      # - SINGLE_RUN=true
-      # - GTFS_URL=https://github.com/carrismetropolitana/gtfs/raw/live/CarrisMetropolitana.zip
-      - GTFS_URL=https://storage.carrismetropolitana.pt/static/gtfs/GTFS_a4_ref_20240502.zip
-    depends_on:
-      - serverdb
-      - networkdb
-
-  # # # # # # # # # # # # # # # # # # # # #
-  # # # # # # # # # # # # # # # # # # # # #
-
-
-  pdf-renderer:
-    build:
-      context: ./renderer
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    logging:
-      options:
-        max-size: '1m'
-        max-file: '1'
-    environment:
-      - API_URL=http://api:5050
-    depends_on:
-      - api
-    ports:
-      - "3005:3000"
-    healthcheck:
-      test: curl -f http://localhost:3000 || exit 1
-      interval: 5s
-      timeout: 30s
-      retries: 100000
-      start_period: 5s
-
-  queue:
-    build:
-      context: ./queue-manager
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    logging:
-      options:
-        max-size: '1m'
-        max-file: '1'
-    environment:
-      - API_URL=http://api:5050
-    # ports:
-    #   - "5052:5052"
-    
-  pdf-printer:
+  pdf-frontend:
     build: 
-      context: ./printer
+      context: ./
       dockerfile: Dockerfile
     restart: unless-stopped
+    # bind my ~/.ssh/id_ed25519 to the container in read only mode
     logging:
       options:
         max-size: '1m'
         max-file: '1'
-    volumes:
-      - ./static/pdf-test:/app/pdfs
+    ports:
+      - "3000:3000"
+    # volumes:
+    #   - ./static/pdf-test:/app/pdfs
     environment:
-      - RENDER_URL=http://pdf-renderer:3000/schedule
-      - QUEUE_URL=http://queue:5052
-    depends_on:
-      queue:
-        condition: service_started
+    - NETWORKDB_HOST=networkdb
+    - NETWORKDB_PASSWORD=networkdbpassword
+    - NETWORKDB_USER=networkdbuser
+    - SERVERDB_HOST=serverdb
+    - REDIS_HOST=serverdb

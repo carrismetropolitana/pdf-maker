@@ -1,0 +1,24 @@
+district_id,district_name,municipality_id,municipality_name,municipality_prefix,region_id,region_name
+15,Setúbal,1502,Alcochete,01,PT170,AML
+15,Setúbal,1503,Almada,02,PT170,AML
+11,Lisboa,1115,Amadora,03,PT170,AML
+15,Setúbal,1504,Barreiro,04,PT170,AML
+11,Lisboa,1105,Cascais,05,PT170,AML
+11,Lisboa,1106,Lisboa,06,PT170,AML
+11,Lisboa,1107,Loures,07,PT170,AML
+11,Lisboa,1109,Mafra,08,PT170,AML
+15,Setúbal,1506,Moita,09,PT170,AML
+15,Setúbal,1507,Montijo,10,PT170,AML
+11,Lisboa,1116,Odivelas,11,PT170,AML
+11,Lisboa,1110,Oeiras,12,PT170,AML
+15,Setúbal,1508,Palmela,13,PT170,AML
+15,Setúbal,1510,Seixal,14,PT170,AML
+15,Setúbal,1511,Sesimbra,15,PT170,AML
+15,Setúbal,1512,Setúbal,16,PT170,AML
+11,Lisboa,1111,Sintra,17,PT170,AML
+11,Lisboa,1114,Vila Franca de Xira,18,PT170,AML
+07,Évora,0712,Vendas Novas,19,PT187,Alentejo Central
+11,Lisboa,1101,Alenquer,20,PT16B,Oeste
+11,Lisboa,1102,Arruda dos Vinhos,20,PT16B,Oeste
+11,Lisboa,1113,Torres Vedras,20,PT16B,Oeste
+11,Lisboa,1112,Sobral de Monte Agraço,20,PT16B,Oeste

@@ -15,7 +15,6 @@ const VALID_FROM = process.env.VALID_FROM_DATE || (() => {
 })();
 
 const QR_URL = process.env.QR_URL || 'https://qr.carrismetropolitana.pt/horarios';
-const REDIS = await getRedisClient();
 
 export async function generateMetadata({ params }: { params: { direction_id: string, line_id: string, stop_id: string } }): Promise<Metadata> {
 	return {
@@ -34,13 +33,16 @@ function urlsToJson<T extends readonly string[]>(urls: [...T]) {
 	return Promise.all(urls.map(url => fetch(url).then(res => res.json()))) as Promise<{ -readonly [P in keyof T]: any; }>;
 }
 
-function keysToJson<T extends readonly string[]>(keys: [...T]) {
+async function keysToJson<T extends readonly string[]>(keys: [...T]) {
+	const REDIS = await getRedisClient();
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	return Promise.all(keys.map(key => REDIS.get(key).then(res => res ? JSON.parse(res) : null))) as Promise<{ -readonly [P in keyof T]: any; }>;
 }
 
 export default async function Page({ params }: { params: { direction_id: string, line_id: string, stop_id: string } }) {
 	// Start by fetching the timetable and line data
+
+	const REDIS = await getRedisClient();
 
 	const [timetable, line]: [Timetable, Line] = await keysToJson([
 		`timetables:${params.line_id}/${params.direction_id}/${params.stop_id}`,

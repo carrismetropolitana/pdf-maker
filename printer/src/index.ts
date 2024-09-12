@@ -1,12 +1,14 @@
 import 'dotenv/config';
 import puppeteer, { Page, Browser } from 'puppeteer';
 import process from 'process';
+import fs from 'fs';
 
 const QUEUE_URL = process.env.QUEUE_URL || 'http://localhost:5052';
 const RENDER_URL = process.env.RENDER_URL || 'http://localhost:3000/schedule';
 const PARALLEL = parseInt(process.env.TABS) || 12;
 const CACHE_SIZE = PARALLEL * 2;
 const REFRESH_AFTER = parseInt(process.env.REFRESH_AFTER) || 100;
+const CHROME_EXECUTABLE_PATH = process.env.CHROME_EXECUTABLE_PATH || undefined;
 
 const SINGLE_RUN = process.env.SINGLE_RUN == 'true' || false;
 
@@ -21,6 +23,10 @@ let start = process.hrtime();
 let pageGotoTime = 0;
 let pdfRenderTime = 0;
 let browserOpenTime = 0;
+
+if (!fs.existsSync('pdfs')) {
+	fs.mkdirSync('pdfs');
+}
 
 function secondsToHms(d: number) {
 	d = Number(d);
@@ -75,7 +81,7 @@ async function processSegment(paths: AsyncGenerator<string>, browser: Browser) {
 }
 
 async function parallelGen(PARALLEL: number, timetablePaths: AsyncGenerator<string, void, unknown>) {
-	const browser = await puppeteer.launch({ headless: true, devtools: false, args: ['--no-sandbox', '--disable-setuid-sandbox', '--no-zygote'] });
+	const browser = await puppeteer.launch({ headless: true, devtools: false, args: ['--no-sandbox', '--disable-setuid-sandbox', '--no-zygote'], executablePath: CHROME_EXECUTABLE_PATH });
 
 	start = process.hrtime();
 
