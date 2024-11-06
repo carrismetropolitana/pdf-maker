@@ -86,7 +86,7 @@ export default async function Page({ params }: { params: { direction_id: string,
 	// Headsign is the line name if the pattern is the main one, otherwise we fetch the variant line name
 	const headsign: string = timetable.patternForDisplay.split('_')[1] === '0'
 		? line.long_name
-		: await REDIS.get(`routes:${timetable.patternForDisplay.slice(0, -2)}`).then(res => res ? JSON.parse(res).long_name : null);
+		: await REDIS.get(`routes:${timetable.patternForDisplay.slice(0, -2)}`).then(res => res ? JSON.parse(res)?.long_name : null);
 	if (!headsign) {
 		console.error('headsign is undefined', headsign);
 		throw new Error('headsign is undefined');

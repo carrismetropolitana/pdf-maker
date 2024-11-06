@@ -90,7 +90,7 @@ const allGtfsFiles: GtfsFile[] = [
 			'CREATE INDEX archives_archive_id_idx ON archives ("archive_id");',
 		],
 		table_query: `CREATE TABLE archives (
-			archive_id VARCHAR(10),
+			archive_id VARCHAR(100),
 			operator_id VARCHAR(2),
 			archive_start_date VARCHAR(8),
 			archive_end_date VARCHAR(8)
@@ -137,13 +137,13 @@ const allGtfsFiles: GtfsFile[] = [
 			'CREATE INDEX routes_route_id_idx ON routes ("route_id");',
 		],
 		table_query: `CREATE TABLE routes (
-			route_id VARCHAR(10),
-			route_short_name VARCHAR(10),
+			route_id VARCHAR(100),
+			route_short_name VARCHAR(100),
 			route_long_name VARCHAR(255),
 			route_type VARCHAR(255),
 			route_color VARCHAR(6),
 			route_text_color VARCHAR(6),
-			line_id VARCHAR(10)
+			line_id VARCHAR(100)
 		);`,
 	},
 
@@ -273,9 +273,9 @@ const allGtfsFiles: GtfsFile[] = [
 			stop_name VARCHAR(255),
 			stop_short_name VARCHAR(255),
 			tts_stop_name VARCHAR(255),
-			operational_status VARCHAR(255),` + 
-			// stop_lat VARCHAR(10),
-			// stop_lon VARCHAR(10),
+			operational_status VARCHAR(255),` +
+			// stop_lat VARCHAR(100),
+			// stop_lon VARCHAR(100),
 			`locality VARCHAR(255),
 			parish_id VARCHAR(255),
 			parish_name VARCHAR(255),

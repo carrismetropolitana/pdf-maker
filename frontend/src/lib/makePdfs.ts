@@ -1,7 +1,7 @@
 import { $, write } from 'bun';
+import { existsSync, mkdirSync } from 'fs';
 import { mkdir, readdir, rename } from 'fs/promises';
 
-import { existsSync, mkdirSync } from 'fs';
 import envVars from './env';
 import { formatDate } from './utils';
 
@@ -19,7 +19,7 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 	// Trap SIGINT signal (Ctrl+C)
 	process.once('SIGINT', cleanup);
 
-	console.log('Writing GTFS file...',);
+	console.log('Writing GTFS file...');
 	await write('../parse-network/gtfs.zip', fileBytes);
 	await $`zip ../gtfs.zip *`.cwd('../parse-network/extraGtfsFiles');
 	const PATH = Bun.env['PATH']?.split(':').filter(path => !path.includes('/tmp/bun-node')).join(':') || '';
@@ -31,8 +31,8 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 		NETWORKDB_HOST: envVars.pg.host,
 		NETWORKDB_PASSWORD: envVars.pg.pw,
 		NETWORKDB_USER: envVars.pg.user,
+		REDIS_HOST: envVars.redis.host,
 		SERVERDB_HOST: envVars.redis.host,
-		REDIS_HOST: envVars.redis.host
 	};
 	console.log('starting parse-network...');
 	const PARSE_NETWORK = Bun.spawn(['bun', 'index.ts'], {
@@ -46,8 +46,8 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 			PATH,
 			SINGLE_RUN: 'true',
 		},
-		// stdout: 'inherit',
-		// stderr: 'inherit',
+		stderr: 'inherit',
+		stdout: 'inherit',
 	});
 	console.log('parse-network exited with', await PARSE_NETWORK.exited);
 
@@ -81,7 +81,6 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 			// stdout: 'inherit',
 		});
 
-
 	const QUEUE_MANAGER = (Bun.spawn(['bun', 'src/index.ts'], {
 		cwd: '../queue-manager',
 		env: {
@@ -105,16 +104,15 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 	});
 	console.log('finished cleaning up printer pdfs');
 
-
 	console.log('Starting printer...');
-	const PRINTER = (Bun.spawn(['bun','src/index.ts'], {
+	const PRINTER = (Bun.spawn(['bun', 'src/index.ts'], {
 		cwd: '../printer',
 		env: {
 			...process.env,
 			...environment,
 			PATH,
-			RENDER_URL: 'http://pdf-frontend:5051/schedule',
 			QUEUE_URL: 'http://pdf-frontend:5052',
+			RENDER_URL: 'http://pdf-frontend:5051/schedule',
 			SINGLE_RUN: 'true',
 		},
 		stderr: 'inherit',
@@ -123,7 +121,6 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 
 	await new Promise(resolve => setTimeout(resolve, 5000));
 	console.log('finished starting printer');
-
 
 	// Wait for the queue manager and both printer processes to finish
 	await QUEUE_MANAGER?.exited;
@@ -162,7 +159,6 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 
 	await $`zip ../../result.zip */*.pdf`.cwd('../printer/pdfs');
 
-	
 	// check if ./files directory exists
 	if (!existsSync(`./files`)) {
 		mkdirSync(`./files`);
@@ -170,7 +166,7 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 	// move the zip file to the ./files directory
 
 	const filename = `${formatDate(date)}-A${area}.zip`;
-	await rename(`../result.zip`, `./files/${filename}`)
-	
+	await rename(`../result.zip`, `./files/${filename}`);
+
 	return `./files/${filename}`;
 }
