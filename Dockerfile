@@ -1,6 +1,6 @@
 # use the official Bun image
 # see all versions at https://hub.docker.com/r/oven/bun/tags
-FROM oven/bun:1 AS base
+FROM oven/bun:1.1.27 AS base
 WORKDIR /usr/src/app
 
 # Build frontend project
@@ -39,7 +39,7 @@ COPY renderer ./renderer
 RUN cd renderer && bun run build && cp -r .next/standalone/* .
 
 # Final stage
-FROM oven/bun:1-alpine AS final
+FROM oven/bun:1.1.27-alpine AS final
 
 # Set working directory
 WORKDIR /usr/src/app
