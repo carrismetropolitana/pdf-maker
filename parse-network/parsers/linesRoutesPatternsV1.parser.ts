@@ -253,7 +253,7 @@ export default async () => {
 			facilities: [],
 			id: lineRaw.id,
 			localities: [],
-			long_name: lineRaw.long_name,
+			long_name: lineRaw?.long_name || 'no long name',
 			municipalities: [],
 			patterns: [],
 			routes: [],

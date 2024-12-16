@@ -2,12 +2,12 @@ import getRedisClient from '@/app/services/redis';
 import { Metadata } from 'next';
 import QRCode from 'qrcode';
 
+import { Facility, Line, Pattern, Timetable } from './apitypes';
 import Footer from './Footer';
 import Header from './Header';
 import Schedule from './Schedule';
 import ScheduleInfo from './ScheduleInfo';
 import Spine from './Spine';
-import { Facility, Line, Pattern, Timetable } from './apitypes';
 
 const VALID_FROM = process.env.VALID_FROM_DATE || (() => {
 	const now = new Date();
@@ -85,8 +85,8 @@ export default async function Page({ params }: { params: { direction_id: string,
 
 	// Headsign is the line name if the pattern is the main one, otherwise we fetch the variant line name
 	const headsign: string = timetable.patternForDisplay.split('_')[1] === '0'
-		? line.long_name
-		: await REDIS.get(`routes:${timetable.patternForDisplay.slice(0, -2)}`).then(res => res ? JSON.parse(res)?.long_name : null);
+		? line?.long_name ?? 'no long name'
+		: await REDIS.get(`routes:${timetable.patternForDisplay.slice(0, -2)}`).then(res => res ? JSON.parse(res)?.long_name ?? 'no-long-name' : null);
 	if (!headsign) {
 		console.error('headsign is undefined', headsign);
 		throw new Error('headsign is undefined');
