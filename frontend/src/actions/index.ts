@@ -17,8 +17,9 @@ export async function submitFile(form: FormData) {
 	const wantedLines = (form.getAll('wantedLines') || []) as string[];
 	const excludedLines = (form.getAll('excludedLines') || []) as string[];
 	const validFrom = form.get('validFrom') as string;
+	const sortBy = form.get('sortBy') as 'stop' | 'line';
 	console.log('submitFile', file, area, wantedLines, excludedLines, validFrom);
-	await addUpload(file, area, wantedLines, excludedLines, validFrom);
+	await addUpload(file, area, wantedLines, excludedLines, validFrom, sortBy);
 
 	checkMoreItems();
 	return getUploads();

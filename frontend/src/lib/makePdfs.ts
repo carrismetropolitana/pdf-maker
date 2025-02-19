@@ -5,7 +5,7 @@ import { mkdir, readdir, rename } from 'fs/promises';
 import envVars from './env';
 import { formatDate } from './utils';
 
-export default async function makePdfs(fileBytes: Uint8Array, area: string, wantedLines: string[], excludedLines: string[], validFrom: string) {
+export default async function makePdfs(fileBytes: Uint8Array, area: string, wantedLines: string[], excludedLines: string[], validFrom: string, sortBy: 'stop' | 'line' = 'stop') {
 	console.log('validFrom', validFrom);
 	// Define a function for cleanup
 	async function cleanup() {
@@ -139,7 +139,7 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 	const pdfFilesPerStop = new Map<string, string[]>();
 	for (const file of pdfFiles) {
 		if (!file.endsWith('.pdf')) continue;
-		const stopId = file.match(/\d{6}/)?.[0];
+		const stopId = sortBy === 'stop' ? file.match(/\d{4}/)?.[0] : file.match(/\d{6}/)?.[0];
 		if (!stopId) continue;
 		const currentFiles = pdfFilesPerStop.get(stopId);
 		if (!currentFiles) {

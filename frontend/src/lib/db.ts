@@ -5,16 +5,17 @@ const db = new Database('db.sqlite', { create: true });
 // make table if not exists holding the file uploads
 db.exec(`
 CREATE TABLE IF NOT EXISTS uploads (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  filename TEXT,
-  file BLOB,
-  area TEXT,
-  wantedLines TEXT,
-  excludedLines TEXT,
-  validFrom TEXT,
-  status TEXT,
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	filename TEXT,
+	file BLOB,
+	area TEXT,
+	wantedLines TEXT,
+	excludedLines TEXT,
+	validFrom TEXT,
+	status TEXT,
 	downloadLink TEXT,
-  submissionTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	submissionTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	sortBy TEXT
 )`);
 
 // Object & string hack for autocomplete union type
@@ -27,6 +28,7 @@ export interface Upload {
 	id: number
 	status: UploadStatus
 	submissionTime: Date
+	sortBy: 'stop' | 'line'
 	validFrom: string
 	wantedLines: string[]
 }
@@ -37,6 +39,7 @@ interface UploadRow {
 	file: Uint8Array
 	filename: string
 	id: number
+	sortBy: 'stop' | 'line'
 	status: UploadStatus
 	submissionTime: string
 	validFrom: string
@@ -52,29 +55,29 @@ function uploadRowtoUpload(row: UploadRow): Upload {
 	};
 }
 
-export async function addUpload(file: File, area: string, wantedLines: string[], excludedLines: string[], validFrom: string) {
-	const statement = db.prepare<undefined, [string, Uint8Array, string, string, string, string, 'queued']>(`
-    INSERT INTO uploads (filename, file, area, wantedLines, excludedLines, validFrom, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-	statement.run(file.name, await file.bytes(), area, JSON.stringify(wantedLines), JSON.stringify(excludedLines), validFrom, 'queued');
+export async function addUpload(file: File, area: string, wantedLines: string[], excludedLines: string[], validFrom: string, sortBy: 'stop' | 'line') {
+	const statement = db.prepare<undefined, [string, Uint8Array, string, string, string, string, string, 'queued']>(`
+		INSERT INTO uploads (filename, file, area, wantedLines, excludedLines, validFrom, sortBy, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`);
+	statement.run(file.name, await file.bytes(), area, JSON.stringify(wantedLines), JSON.stringify(excludedLines), validFrom, sortBy, 'queued');
 }
 
 export function cancelQueued(id: number) {
 	// remove row
 	const result = db.prepare<undefined, [number]>(`
-    DELETE FROM uploads
-    WHERE id = ? AND status = 'queued' OR status = 'processing'
-  `).run(id);
+		DELETE FROM uploads
+		WHERE id = ? AND status = 'queued' OR status = 'processing'
+	`).run(id);
 	console.log(result);
 }
 
 export function getUploads(): Omit<Upload, 'file'>[] {
 	return db.prepare<Omit<UploadRow, 'file'>, []>(`
-    SELECT id, filename, area, wantedLines, excludedLines, validFrom, status, submissionTime
-    FROM uploads
-    ORDER BY submissionTime DESC
-  `).all().map(row => ({
+		SELECT id, filename, area, wantedLines, excludedLines, validFrom, status, submissionTime
+		FROM uploads
+		ORDER BY submissionTime DESC
+	`).all().map(row => ({
 		...row,
 		excludedLines: JSON.parse(row.excludedLines),
 		submissionTime: new Date(row.submissionTime),
