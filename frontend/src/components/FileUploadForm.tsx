@@ -69,48 +69,13 @@ export default function FileUploadForm({
 		}, 10000);
 	};
 
+	//
+	// C. Render Components
 	return (
 		<form action={formAction} className="space-y-4">
-			<div className="grid gap-2">
-				<Label htmlFor="gtfs-file">GTFS File</Label>
-				<Input
-					accept=".zip"
-					className="flex-1"
-					id="gtfs-file"
-					onChange={handleFileChange}
-					type="file"
-				/>
-			</div>
-			<div className="grid gap-2">
-				<Label htmlFor="area">Area</Label>
-				<Select onValueChange={setArea} value={area}>
-					<SelectTrigger id="area">
-						<SelectValue placeholder="Select an area" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="1">Area 1</SelectItem>
-						<SelectItem value="2">Area 2</SelectItem>
-						<SelectItem value="3">Area 3</SelectItem>
-						<SelectItem value="4">Area 4</SelectItem>
-					</SelectContent>
-				</Select>
-			</div>
-			<div className="grid gap-2">
-				<Label htmlFor="sort-by">Sort By</Label>
-				<Select
-					onValueChange={(value) =>
-						setSortBy(value as 'stop' | 'line')
-					}
-					value={sortBy}>
-					<SelectTrigger id="sort-by">
-						<SelectValue placeholder="Select a sort by" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="stop">Stop</SelectItem>
-						<SelectItem value="line">Line</SelectItem>
-					</SelectContent>
-				</Select>
-			</div>
+			<FileUpload handleFileChange={handleFileChange} />
+			<AreaSelect setArea={setArea} area={area} />
+			<SortBySelect setSortBy={setSortBy} sortBy={sortBy} />
 			<ChipInput
 				label="Wanted Lines"
 				chips={wantedLines}
@@ -127,35 +92,7 @@ export default function FileUploadForm({
 				disabled={wantedLines.length > 0}
 				chipClassName="bg-destructive text-destructive-foreground"
 			/>
-			<div className="grid gap-2">
-				<Label htmlFor="valid-from">Valid From</Label>
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button
-							id="valid-from"
-							variant="outline"
-							className={cn(
-								'w-full justify-start text-left font-normal',
-								!validFrom && 'text-muted-foreground'
-							)}>
-							<CalendarDays className="mr-2 h-4 w-4" />
-							{validFrom ? (
-								format(validFrom, 'PPP')
-							) : (
-								<span>Pick a date</span>
-							)}
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent align="start" className="w-auto p-0">
-						<Calendar
-							mode="single"
-							onSelect={setValidFrom}
-							selected={validFrom}
-							initialFocus
-						/>
-					</PopoverContent>
-				</Popover>
-			</div>
+			<DatePicker validFrom={validFrom} setValidFrom={setValidFrom} />
 			<div className="flex justify-end">
 				<Button type="submit" disabled={!canSave}>
 					Submit
@@ -163,5 +100,112 @@ export default function FileUploadForm({
 				</Button>
 			</div>
 		</form>
+	);
+}
+
+function SortBySelect({
+	setSortBy,
+	sortBy,
+}: {
+	setSortBy: (f: 'stop' | 'line') => void;
+	sortBy: 'stop' | 'line';
+}) {
+	return (
+		<div>
+			<Label htmlFor="sort-by">Sort By</Label>
+			<Select onValueChange={setSortBy} value={sortBy}>
+				<SelectTrigger id="sort-by">
+					<SelectValue placeholder="Select a sort by" />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="stop">Stop</SelectItem>
+					<SelectItem value="line">Line</SelectItem>
+				</SelectContent>
+			</Select>
+		</div>
+	);
+}
+
+function FileUpload({
+	handleFileChange,
+}: {
+	handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+	return (
+		<div>
+			<Label htmlFor="gtfs-file">GTFS File</Label>
+			<Input
+				accept=".zip"
+				className="flex-1"
+				id="gtfs-file"
+				onChange={handleFileChange}
+				type="file"
+			/>
+		</div>
+	);
+}
+
+function AreaSelect({
+	setArea,
+	area,
+}: {
+	setArea: (f: string) => void;
+	area: string;
+}) {
+	return (
+		<div>
+			<Label htmlFor="area">Area</Label>
+			<Select onValueChange={setArea} value={area}>
+				<SelectTrigger id="area">
+					<SelectValue placeholder="Select an area" />
+				</SelectTrigger>
+				<SelectContent>
+					{Array.from({ length: 4 }, (_, i) => i + 1).map((value) => (
+						<SelectItem key={value} value={value.toString()}>
+							Area {value}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+		</div>
+	);
+}
+
+interface DatePickerProps {
+	validFrom: Date | undefined;
+	setValidFrom: (date: Date | undefined) => void;
+}
+
+function DatePicker({ validFrom, setValidFrom }: DatePickerProps) {
+	return (
+		<div>
+			<Label htmlFor="valid-from">Valid From</Label>
+			<Popover>
+				<PopoverTrigger asChild>
+					<Button
+						id="valid-from"
+						variant="outline"
+						className={cn(
+							'w-full justify-start text-left font-normal',
+							!validFrom && 'text-muted-foreground'
+						)}>
+						<CalendarDays className="mr-2 h-4 w-4" />
+						{validFrom ? (
+							format(validFrom, 'PPP')
+						) : (
+							<span>Pick a date</span>
+						)}
+					</Button>
+				</PopoverTrigger>
+				<PopoverContent align="start" className="w-auto p-0">
+					<Calendar
+						mode="single"
+						onSelect={setValidFrom}
+						selected={validFrom}
+						initialFocus
+					/>
+				</PopoverContent>
+			</Popover>
+		</div>
 	);
 }
