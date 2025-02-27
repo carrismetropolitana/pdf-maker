@@ -79,7 +79,7 @@ export default async function Page({ params }: { params: { direction_id: string,
 	}
 	// Check if the pattern has more than one stop in its path
 	if (!pattern.path || !pattern.path[1] || !pattern.path[1].stop) {
-		console.error('pattern.path[1].stop is undefined, pattern:', pattern);
+		console.error('pattern.path[1].stop is undefined, pattern.path:', pattern.path);
 		throw new Error('pattern.path[1].stop is undefined');
 	}
 
