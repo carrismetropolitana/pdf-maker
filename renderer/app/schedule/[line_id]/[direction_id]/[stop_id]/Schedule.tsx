@@ -109,18 +109,20 @@ function PeriodTable({ period }: { period: { period_names: string[] } & Timetabl
 }
 
 function SubTable({ times, title }: { times: TimetableEntry[], title: string }) {
-	const timesByHour = Array.from<number[], { exceptions: string[], minute: number }[]>({ length: 24 }, () => []);
+	let timesByHour = Array.from<number[], { hour: number, times: { exceptions: string[], minute: number }[] }>({ length: 24 }, (_, index) => ({ hour: index, times: [] }));
 	for (const entry of times) {
-		const [hour, minute, _second] = entry.time.split(':').map(s => parseInt(s, 10));
+		const [hour, minute] = entry.time.split(':').map(s => parseInt(s, 10));
 		const exception = entry.exceptions.map(e => e.id);
-		// -4 because gtfs is from 4 am to 4 am
-		const span = timesByHour[hour - 4];
+		// Handle the case where the hour is < 4 and >= 24
+		const span = timesByHour.find(elem => elem.hour === hour % 24);
+		console.error(`Hour: ${hour}. ParsedHour: ${hour % 24}. Minute: ${minute}`);
 		if (!span) console.error(`Could not fit hour ${hour} in schedule`);
-		if (span && !span.find(elem => elem.minute == minute)) span.push({ exceptions: exception, minute });
+		if (span && !span.times.find(elem => elem.minute == minute)) span.times.push({ exceptions: exception, minute });
 	}
+	timesByHour = [...timesByHour.slice(4), ...timesByHour.slice(0, 4)];
 	// sort each span
 	for (const span of timesByHour) {
-		span.sort((a, b) => a.minute - b.minute);
+		span.times.sort((a, b) => a.minute - b.minute);
 	}
 	// console.log(times);
 	return (
@@ -131,10 +133,10 @@ function SubTable({ times, title }: { times: TimetableEntry[], title: string }) 
 					<div className="bg-black text-white text-center rounded-l-full pl-2 -ml-2 font-semibold text-[8pt] h-[4mm] leading-none flex items-center">Hora</div>
 					{times.length != 0 && <div className="text-center text-[7.5pt]">Min.</div>}
 				</div>
-				{timesByHour.map((minutes, hour) => (
-					<div key={hour} className="flex flex-col items-stretch w-4 text-[7mm]">
-						<div className={'bg-black text-white text-center font-semibold text-[8pt] h-[4mm] leading-none flex items-center justify-center relative ' + (hour == timesByHour.length - 1 ? ' pr-1 -mr-1 rounded-r-full' : '')}>{(hour + 4) % 24}</div>
-						{minutes.map((entry, i) => (
+				{timesByHour.map(minutes => (
+					<div key={minutes.hour} className="flex flex-col items-stretch w-4 text-[7mm]">
+						<div className={'bg-black text-white text-center font-semibold text-[8pt] h-[4mm] leading-none flex items-center justify-center relative ' + (minutes.hour == timesByHour.length - 1 ? ' pr-1 -mr-1 rounded-r-full' : '')}>{minutes.hour}</div>
+						{minutes.times.map((entry, i) => (
 							<div key={i} className="text-[7.5pt] text-center relative self-center">
 								{entry.minute.toString().padStart(2, '0')}
 								{entry.exceptions && (
