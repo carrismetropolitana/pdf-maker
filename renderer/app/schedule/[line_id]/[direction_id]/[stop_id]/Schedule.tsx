@@ -115,7 +115,6 @@ function SubTable({ times, title }: { times: TimetableEntry[], title: string }) 
 		const exception = entry.exceptions.map(e => e.id);
 		// Handle the case where the hour is < 4 and >= 24
 		const span = timesByHour.find(elem => elem.hour === hour % 24);
-		console.error(`Hour: ${hour}. ParsedHour: ${hour % 24}. Minute: ${minute}`);
 		if (!span) console.error(`Could not fit hour ${hour} in schedule`);
 		if (span && !span.times.find(elem => elem.minute == minute)) span.times.push({ exceptions: exception, minute });
 	}
