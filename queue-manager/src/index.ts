@@ -57,6 +57,9 @@ async function main() {
 
 	try {
 		await fastify.listen({ port: PORT, host: '0.0.0.0' });
+		const timetableIndex = await fetchTimetables();
+		updatedAt = timetableIndex.updated_at;
+		queue = timetableIndex.pairs;
 	} catch (e) {
 		console.error(e);
 		process.exit(1);
