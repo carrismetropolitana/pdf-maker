@@ -111,7 +111,7 @@ async function replenishQueue():Promise<undefined | 'finished'> {
 	if (finished) return 'finished';
 	while (queue.length < CACHE_SIZE) {
 		try {
-			await fetch(`${QUEUE_URL}/forcerefresh`);
+			// await fetch(`${QUEUE_URL}/forcerefresh`);
 			let response = await fetch(`${QUEUE_URL}/nextitem`);
 			let maybeItem: { finished: boolean, item: string | null } = await response.json();
 
