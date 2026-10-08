@@ -13,7 +13,7 @@ services:
     logging:
       options:
         max-size: "1m"
-        max-file: "1"
+        max-file: "3"
     environment:
       - POSTGRES_USER=networkdbuser
       - POSTGRES_PASSWORD=networkdbpassword
@@ -38,7 +38,7 @@ services:
     logging:
       options:
         max-size: "1m"
-        max-file: "1"
+        max-file: "3"
     # volumes:
     #   - serverdb:/data
     environment:
@@ -82,7 +82,7 @@ services:
     logging:
       options:
         max-size: "1m"
-        max-file: "1"
+        max-file: "3"
     ports:
       - "3000:3000"
     # volumes:
