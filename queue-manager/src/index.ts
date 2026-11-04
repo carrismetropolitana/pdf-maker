@@ -27,6 +27,9 @@ async function main() {
 	let i = 0;
 	let startTime = process.hrtime.bigint();
 	fastify.get('/nextitem', async (request, reply) => {
+		if (updatedAt === null) {
+			return reply.code(503).send({ finished: false, item: null, ready: false });
+		}
 		if (i % LOG_EVERY === 0) {
 			let currentTime = process.hrtime.bigint();
 			// log how many items per second we are processing since last log
@@ -56,10 +59,11 @@ async function main() {
 	});
 
 	try {
-		await fastify.listen({ port: PORT, host: '0.0.0.0' });
 		const timetableIndex = await fetchTimetables();
 		updatedAt = timetableIndex.updated_at;
 		queue = timetableIndex.pairs;
+		console.log(`Loaded ${queue.length} timetable pairs (${updatedAt})`);
+		await fastify.listen({ port: PORT, host: '0.0.0.0' });
 	} catch (e) {
 		console.error(e);
 		process.exit(1);

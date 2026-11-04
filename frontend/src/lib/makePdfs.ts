@@ -1,9 +1,60 @@
 import { $, write } from 'bun';
-import { existsSync, mkdirSync } from 'fs';
-import { mkdir, readdir, rename } from 'fs/promises';
+import { mkdir, readdir, rename, rm } from 'fs/promises';
 
 import envVars from './env';
 import { formatDate } from './utils';
+
+const QUEUE_URL = 'http://127.0.0.1:5052';
+const RENDER_URL = 'http://127.0.0.1:5051/schedule';
+
+async function waitForQueue(timeoutMs = 30_000) {
+	const deadline = Date.now() + timeoutMs;
+	let lastError: unknown;
+
+	while (Date.now() < deadline) {
+		try {
+			const response = await fetch(`${QUEUE_URL}/status`);
+			if (response.ok) {
+				const status = await response.json() as { ready: boolean, queue: number };
+				if (status.ready) {
+					if (status.queue === 0) {
+						throw new Error('Queue manager loaded 0 timetable pairs');
+					}
+					console.log(`Queue manager ready with ${status.queue} timetable pairs`);
+					return;
+				}
+			}
+		}
+		catch (error) {
+			if (error instanceof Error && error.message.includes('loaded 0 timetable pairs')) throw error;
+			lastError = error;
+		}
+		await new Promise(resolve => setTimeout(resolve, 250));
+	}
+
+	throw new Error(`Queue manager did not become ready within ${timeoutMs / 1000}s`, { cause: lastError });
+}
+
+async function waitForRenderer(timeoutMs = 30_000) {
+	const deadline = Date.now() + timeoutMs;
+	let lastError: unknown;
+
+	while (Date.now() < deadline) {
+		try {
+			const response = await fetch(RENDER_URL.replace(/\/schedule$/, ''));
+			if (response.ok || response.status === 404) {
+				console.log('Renderer ready');
+				return;
+			}
+		}
+		catch (error) {
+			lastError = error;
+		}
+		await new Promise(resolve => setTimeout(resolve, 250));
+	}
+
+	throw new Error(`Renderer did not become ready within ${timeoutMs / 1000}s`, { cause: lastError });
+}
 
 export default async function makePdfs(fileBytes: Uint8Array, area: string, wantedLines: string[], excludedLines: string[], validFrom: string, sortBy: 'stop' | 'line' = 'stop') {
 	console.log('validFrom', validFrom);
@@ -73,12 +124,13 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 				...process.env,
 				...environment,
 				API_URL: 'http://pdf-frontend:5050',
+				HOSTNAME: '0.0.0.0',
 				PATH,
 				PORT: '5051',
 				VALID_FROM_DATE: validFrom,
 			},
-			// stderr: 'inherit',
-			// stdout: 'inherit',
+			stderr: 'inherit',
+			stdout: 'inherit',
 		});
 
 	const QUEUE_MANAGER = (Bun.spawn(['bun', 'src/index.ts'], {
@@ -90,18 +142,24 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 			PORT: '5052',
 			SINGLE_RUN: 'true',
 		},
-		// stderr: 'inherit',
-		// stdout: 'inherit',
+		stderr: 'inherit',
+		stdout: 'inherit',
 	}));
 
-	await new Promise(resolve => setTimeout(resolve, 5000));
+	try {
+		await Promise.all([waitForQueue(), waitForRenderer()]);
+	}
+	catch (error) {
+		QUEUE_MANAGER.kill();
+		STANDALONE.kill();
+		throw error;
+	}
 	console.log('finished starting queue manager');
 
-	// // Clean up the printer PDFs directory
+	// Clean up the printer PDFs directory
 	console.log('Cleaning up printer pdfs...');
-	await $`rm -rf ../printer/pdfs/* `.catch(() => {
-		console.log('No pdfs to delete');
-	});
+	await rm('../printer/pdfs', { recursive: true, force: true });
+	await mkdir('../printer/pdfs', { recursive: true });
 	console.log('finished cleaning up printer pdfs');
 
 	console.log('Starting printer...');
@@ -111,8 +169,8 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 			...process.env,
 			...environment,
 			PATH,
-			QUEUE_URL: 'http://pdf-frontend:5052',
-			RENDER_URL: 'http://pdf-frontend:5051/schedule',
+			QUEUE_URL,
+			RENDER_URL,
 			SINGLE_RUN: 'true',
 		},
 		stderr: 'inherit',
@@ -133,12 +191,15 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 
 	// Organize PDFs and zip them
 	const date = new Date();
-	await $`rm ../result.zip`.catch(() => null);
+	await rm('../result.zip', { force: true });
 
-	const pdfFiles = await readdir('../printer/pdfs');
+	const pdfFiles = (await readdir('../printer/pdfs')).filter(file => file.endsWith('.pdf'));
+	if (pdfFiles.length === 0) {
+		throw new Error('Printer completed without rendering any PDFs');
+	}
+
 	const pdfFilesPerStop = new Map<string, string[]>();
 	for (const file of pdfFiles) {
-		if (!file.endsWith('.pdf')) continue;
 		const stopId = sortBy === 'stop' ? file.match(/\d{4}/)?.[0] : file.match(/\d{6}/)?.[0];
 		if (!stopId) continue;
 		const currentFiles = pdfFilesPerStop.get(stopId);
@@ -150,19 +211,30 @@ export default async function makePdfs(fileBytes: Uint8Array, area: string, want
 		}
 	}
 
+	const archiveFiles: string[] = [];
 	for (const [stopId, files] of pdfFilesPerStop) {
 		await mkdir(`../printer/pdfs/${stopId}`);
 		for (const file of files) {
 			await rename(`../printer/pdfs/${file}`, `../printer/pdfs/${stopId}/${file}`);
+			archiveFiles.push(`${stopId}/${file}`);
 		}
 	}
 
-	await $`zip ../../result.zip */*.pdf`.cwd('../printer/pdfs');
-
-	// check if ./files directory exists
-	if (!existsSync(`./files`)) {
-		mkdirSync(`./files`);
+	if (archiveFiles.length === 0) {
+		throw new Error('Rendered PDFs could not be grouped for the result archive');
 	}
+
+	const zipProcess = Bun.spawn(['zip', '../../result.zip', ...archiveFiles], {
+		cwd: '../printer/pdfs',
+		stderr: 'inherit',
+		stdout: 'inherit',
+	});
+	const zipExitCode = await zipProcess.exited;
+	if (zipExitCode !== 0) {
+		throw new Error(`Failed to create result archive (zip exited with ${zipExitCode})`);
+	}
+
+	await mkdir('./files', { recursive: true });
 	// move the zip file to the ./files directory
 
 	const filename = `${formatDate(date)}-A${area}.zip`;
