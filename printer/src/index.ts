@@ -107,23 +107,40 @@ let queue: string[] = [];
 
 // Helper function to fetch items and replenish the queue
 let finished = false;
+let receivedCount = 0;
 async function replenishQueue():Promise<undefined | 'finished'> {
 	if (finished) return 'finished';
 	while (queue.length < CACHE_SIZE) {
 		try {
 			// await fetch(`${QUEUE_URL}/forcerefresh`);
 			let response = await fetch(`${QUEUE_URL}/nextitem`);
+			if (!response.ok) {
+				await new Promise(resolve => setTimeout(resolve, 250));
+				continue;
+			}
 			let maybeItem: { finished: boolean, item: string | null } = await response.json();
 
 			if (maybeItem.finished) {
 				if (SINGLE_RUN) {
-					console.log('Finished processing all items');
+					if (receivedCount === 0) {
+						const statusResponse = await fetch(`${QUEUE_URL}/status`);
+						if (!statusResponse.ok) {
+							await new Promise(resolve => setTimeout(resolve, 250));
+							continue;
+						}
+						const status = await statusResponse.json() as { ready: boolean, queue: number };
+						if (!status.ready || status.queue > 0) {
+							await new Promise(resolve => setTimeout(resolve, 250));
+							continue;
+						}
+					}
 					finished = true;
 					return 'finished';
 				}
 				await new Promise(resolve => setTimeout(resolve, 5000));
 			} else if (maybeItem.item) {
 				queue.push(maybeItem.item);
+				receivedCount++;
 				// console.log(`Item added: ${maybeItem.item}`);
 			}
 		} catch (error) {
@@ -135,20 +152,27 @@ async function replenishQueue():Promise<undefined | 'finished'> {
 
 // Asynchronous generator function to manage the queue and yield items
 async function* itemGenerator() {
-	let finished = false;
-	while (!finished) {
-		// console.log(`Queue length: ${queue.length}, finished: ${finished}`);
+	while (true) {
 		if (queue.length === 0) {
 			const res = await replenishQueue();
-			finished = res === 'finished';
-			if (finished) return;
-			console.log('Had to wait for replenishQueue');
-		} else if (queue.length < CACHE_SIZE) {
+			// Upstream may report finished after we already buffered items locally.
+			// Drain those before exiting — otherwise batches smaller than CACHE_SIZE
+			// (PARALLEL * 2) render 0 PDFs.
+			if (queue.length === 0) {
+				if (res === 'finished' || finished) {
+					console.log('Finished processing all items');
+					return;
+				}
+				console.log('Had to wait for replenishQueue');
+				continue;
+			}
+		}
+		else if (queue.length < CACHE_SIZE && !finished) {
 			replenishQueue(); // Call replenishQueue without awaiting it
 		}
 
-		const item = queue.shift(); // Remove the item from the front of the queue
-		yield item; // Yield the current item
+		const item = queue.shift();
+		if (item != null) yield item;
 	}
 }
 
